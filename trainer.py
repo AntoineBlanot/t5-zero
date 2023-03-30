@@ -81,26 +81,20 @@ class MyTrainer():
         all_eval_outputs, all_eval_labels = [], []
         all_eval_loss = []
         for i, inputs in enumerate(self.eval_loader):
-            eval_pbar.update()
-            inputs = {k: v.to(self.device) for k,v in inputs.items()}
-            labels = inputs.pop('label')
-            
-            self.optimizer.zero_grad()
+            with torch.no_grad():
+                eval_pbar.update()
+                inputs = {k: v.to(self.device) for k,v in inputs.items()}
+                labels = inputs.pop('label')
+                
+                outputs = self.model(**inputs)
 
-            outputs = self.model(**inputs)
+                eval_loss = self.criterion(outputs['head_outputs'], labels)
 
-            eval_loss = self.criterion(outputs['head_outputs'], labels)
-            eval_loss.backward()
+                eval_pbar.set_postfix(dict(eval_loss=eval_loss.item()))
 
-            self.optimizer.step()
-            eval_pbar.set_postfix(dict(eval_loss=eval_loss.item()))
-
-            all_eval_outputs.append(outputs['head_outputs'].detach())
-            all_eval_labels.append(labels)
-            all_eval_loss.append(eval_loss.detach())
-
-            if i == 20:
-                break
+                all_eval_outputs.append(outputs['head_outputs'].detach())
+                all_eval_labels.append(labels)
+                all_eval_loss.append(eval_loss.detach())
 
         eval_dict = dict(outputs=all_eval_outputs, labels=all_eval_labels, loss=all_eval_loss)
         eval_dict = {k: torch.cat(v) if v[0].dim() > 0 else torch.stack(v) for k,v in eval_dict.items()}

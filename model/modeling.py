@@ -7,10 +7,10 @@ from model.encoder import T5Encoder, NLIHead
 
 class MyModel(nn.Module):
 
-    def __init__(self, name: str, *args, **kwargs) -> None:
+    def __init__(self, name: str, n_class: int, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.encoder = T5Encoder(name=name)
-        self.head = NLIHead(n_class=3, d_model=self.encoder.model.config.d_model)
+        self.head = NLIHead(n_class=n_class, d_model=self.encoder.model.config.d_model)
 
     def forward(self, *args, **kwargs) -> dict:
         encoder_outputs, pooled_outputs = self.encoder(*args, **kwargs)

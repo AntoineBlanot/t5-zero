@@ -14,7 +14,7 @@ from trainer import MyTrainer
 
 name = "t5-large"
 tokenizer = AutoTokenizer.from_pretrained(name)
-model = MyModel(name)
+model = MyModel(name, 3)
 print('Model params: {} M'.format(int(sum(p.numel() for p in model.parameters())/1e6)))
 print('Trainable params: {} M'.format(int(sum(p.numel() for p in model.parameters() if p.requires_grad)/1e6)))
 
@@ -27,7 +27,6 @@ def compute_metrics(outputs_dict: dict) -> dict:
 
     outputs = outputs_dict['outputs']
     predictions = outputs.argmax(-1)
-    print(predictions)
     labels = outputs_dict['labels']
 
     loss = outputs_dict['loss'].mean(-1).item()
@@ -38,26 +37,28 @@ def compute_metrics(outputs_dict: dict) -> dict:
 
     return {**dict(eval_loss=loss), **acc, **rec, **prec, **f1}
 
+train_dataset = MultiNLIDataset(split='train', tokenizer=tokenizer)
 eval_dataset = MultiNLIDataset(split='validation_matched', tokenizer=tokenizer)
 
 collator = PaddingCollator(tokenizer)
-eval_loader = DataLoader(eval_dataset, batch_size=8, collate_fn=collator)
+train_loader = DataLoader(train_dataset, batch_size=4, collate_fn=collator)
+eval_loader = DataLoader(eval_dataset, batch_size=4, collate_fn=collator)
 
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = Adafactor(model.parameters(), scale_parameter=False, relative_step=False, warmup_init=False, lr=1e-3)
 
 trainer = MyTrainer(
     model=model,
-    train_loader=eval_loader,
+    train_loader=train_loader,
     eval_loader=eval_loader,
     criterion=criterion,
     optimizer=optimizer,
     compute_metrics=compute_metrics,
-    output_dir='test-model',
+    output_dir='t5-zero-1',
     device='cuda',
-    max_train_steps=200,
-    eval_steps=10,
-    save_steps=10
+    max_train_steps=len(train_loader)*2,
+    eval_steps=1000,
+    save_steps=1000
 )
 
 out = trainer.train()
