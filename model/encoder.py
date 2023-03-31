@@ -13,9 +13,7 @@ class T5Encoder(nn.Module):
 
     def forward(self, *args, **kwargs) -> Tensor:
         last_hidden_state = self.model.forward(*args, **kwargs).last_hidden_state
-        pooled_output = last_hidden_state.mean(-2)
-
-        return last_hidden_state, pooled_output
+        return last_hidden_state
 
 
 class NLIHead(nn.Module):
