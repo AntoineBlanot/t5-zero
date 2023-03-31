@@ -14,7 +14,8 @@ class MyTrainer():
         train_loader: DataLoader, eval_loader: DataLoader,
         criterion: nn.Module, optimizer: optim, compute_metrics: callable = None,
         output_dir: str = '.', device: str = 'cpu',
-        max_train_steps: int = None, eval_steps : int = None, save_steps: int = None, log_steps: int = None
+        max_train_steps: int = None, eval_steps : int = None, save_steps: int = None, log_steps: int = None,
+        logger: dict = None
     ) -> None:
         self.model = model.to(device)
         self.train_loader = train_loader
@@ -33,14 +34,23 @@ class MyTrainer():
         self.save_steps = save_steps if save_steps is not None else max_train_steps
         self.log_steps = log_steps if log_steps is not None else max_train_steps
 
+        self.logger = logger
+
+
     def train(self) -> dict:
         """
         Training entry point.
         """
+
         self.model.train()
         train_pbar = tqdm(range(self.max_train_steps), desc='Training')
         self.train_step = 0
         self.all_train_metrics, self.all_eval_metrics = {}, {}
+
+        if self.logger is not None:
+            import wandb
+            wandb.init(**self.logger)
+            wandb.watch(self.model, log_freq=self.log_steps)
 
         while not self.__should_stop_train():
             for i, inputs in enumerate(self.train_loader):
@@ -68,10 +78,17 @@ class MyTrainer():
 
                 if self.__should_log():
                     log_metrics = {
-                        **{k: np.asarray(v).mean() if k != 'train_epoch' else v[-1] for k,v in self.all_train_metrics.items() if k not in ['train_epoch']},
+                        **{k: np.asarray(v).mean() if k != 'train_epoch' else v[-1] for k,v in self.all_train_metrics.items()},
                         **self.all_eval_metrics
                     }
                     train_pbar.set_postfix(log_metrics)
+
+                    if self.logger is not None:
+                        wandb.log({
+                            **{'train/step': self.train_step},
+                            **{k.replace('_', '/'): v for k,v in log_metrics.items()}
+                        })
+
                     self.all_train_metrics = {}      # reset train metrics
 
                 if self.__should_save():
@@ -81,6 +98,9 @@ class MyTrainer():
                 if self.__should_stop_train():
                     break
         
+        if self.logger is not None:
+            wandb.finish()
+
         return log_metrics
 
     def evaluate(self) -> dict:
