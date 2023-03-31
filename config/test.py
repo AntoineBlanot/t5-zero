@@ -10,12 +10,12 @@ config = dict(
     name='t5-1',
     model_cfg=dict(
         cls=MyModel,
-        name='t5-large',
+        name='t5-base',
         n_class=3
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='t5-large',
+        pretrained_model_name_or_path='t5-base',
         model_max_length=512
     ),
     data_cfg=dict(
@@ -38,11 +38,12 @@ config = dict(
             lr=1e-3
         ),
         output_dir='test',
-        train_batch_size=8,
-        eval_batch_size=8,
-        device='cuda',
-        max_train_steps=100,
-        eval_steps= 20,
-        save_steps= 20
+        train_batch_size=2,
+        eval_batch_size=2,
+        device='cpu',
+        max_train_steps=21,
+        eval_steps= 10,
+        save_steps= 10,
+        log_steps= 10
     )
 )
