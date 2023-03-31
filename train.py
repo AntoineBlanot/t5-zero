@@ -51,7 +51,7 @@ def compute_metrics(outputs_dict: dict) -> dict:
     prec = precision_metric.compute(predictions=predictions, references=labels, average='macro')
     f1 = f1_metric.compute(predictions=predictions, references=labels, average='macro')
 
-    return {**dict(eval_loss=loss), **acc, **rec, **prec, **f1}
+    return {**dict(loss=loss), **acc, **rec, **prec, **f1}
 
 
 # Trainer
@@ -61,4 +61,6 @@ trainer =  MyTrainer(
     **train_cfg
 )
 
-trainer.train()
+metrics = trainer.train()
+print('Training is over')
+print(metrics)

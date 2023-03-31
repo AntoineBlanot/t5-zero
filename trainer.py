@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import torch
 from torch import Tensor, nn, optim
 from torch.utils.data import DataLoader
@@ -13,7 +14,7 @@ class MyTrainer():
         train_loader: DataLoader, eval_loader: DataLoader,
         criterion: nn.Module, optimizer: optim, compute_metrics: callable = None,
         output_dir: str = '.', device: str = 'cpu',
-        max_train_steps: int = None, eval_steps : int = None, save_steps: int = None
+        max_train_steps: int = None, eval_steps : int = None, save_steps: int = None, log_steps: int = None
     ) -> None:
         self.model = model.to(device)
         self.train_loader = train_loader
@@ -28,17 +29,18 @@ class MyTrainer():
 
         default_steps = len(train_loader)
         self.max_train_steps = max_train_steps if max_train_steps is not None else default_steps
-        self.eval_steps = eval_steps if eval_steps is not None else default_steps
-        self.save_steps = save_steps if save_steps is not None else default_steps
+        self.eval_steps = eval_steps if eval_steps is not None else max_train_steps
+        self.save_steps = save_steps if save_steps is not None else max_train_steps
+        self.log_steps = log_steps if log_steps is not None else max_train_steps
 
     def train(self) -> dict:
         """
         Training entry point.
         """
         self.model.train()
-        train_pbar = tqdm(range(self.max_train_steps), desc='Training', leave=True)
+        train_pbar = tqdm(range(self.max_train_steps), desc='Training')
         self.train_step = 0
-        self.train_metrics = {}
+        self.all_train_metrics, self.all_eval_metrics = {}, {}
 
         while not self.__should_stop_train():
             for i, inputs in enumerate(self.train_loader):
@@ -55,14 +57,22 @@ class MyTrainer():
                 train_loss.backward()
 
                 self.optimizer.step()
-                self.train_metrics.update(dict(epoch_step=self.train_step/len(self.train_loader), train_loss=train_loss.item()))
-                train_pbar.set_postfix(self.train_metrics)
+
+                train_metrics = dict(train_epoch=round(self.train_step/len(self.train_loader), 4), train_loss=train_loss.item())
+                self.all_train_metrics.update({k: self.all_train_metrics.get(k, []) + [v] for k,v in train_metrics.items()})
 
                 if self.__should_eval():
-                    eval_res = self.evaluate()
-                    self.train_metrics.update(eval_res)
-                    train_pbar.set_postfix(self.train_metrics)
+                    eval_metrics = self.evaluate()
+                    self.all_eval_metrics.update(eval_metrics)
                     self.model.train()
+
+                if self.__should_log():
+                    log_metrics = {
+                        **{k: np.asarray(v).mean() if k != 'train_epoch' else v[-1] for k,v in self.all_train_metrics.items() if k not in ['train_epoch']},
+                        **self.all_eval_metrics
+                    }
+                    train_pbar.set_postfix(log_metrics)
+                    self.all_train_metrics = {}      # reset train metrics
 
                 if self.__should_save():
                     save_path = '{}/model-step-{}.pt'.format(self.output_dir, self.train_step)
@@ -70,13 +80,15 @@ class MyTrainer():
 
                 if self.__should_stop_train():
                     break
+        
+        return log_metrics
 
     def evaluate(self) -> dict:
         """
         Evaluation entry point.
         """
         self.model.eval()
-        eval_pbar = tqdm(self.eval_loader, desc='Evaluation')
+        eval_pbar = tqdm(self.eval_loader, desc='Evaluation', leave=False)
 
         all_eval_outputs, all_eval_labels = [], []
         all_eval_loss = []
@@ -90,16 +102,19 @@ class MyTrainer():
 
                 eval_loss = self.criterion(outputs['head_outputs'], labels)
 
-                eval_pbar.set_postfix(dict(eval_loss=eval_loss.item()))
-
                 all_eval_outputs.append(outputs['head_outputs'].detach())
                 all_eval_labels.append(labels)
                 all_eval_loss.append(eval_loss.detach())
 
         eval_dict = dict(outputs=all_eval_outputs, labels=all_eval_labels, loss=all_eval_loss)
         eval_dict = {k: torch.cat(v) if v[0].dim() > 0 else torch.stack(v) for k,v in eval_dict.items()}
-        
-        eval_metrics = self.compute_metrics(eval_dict)
+
+        if self.compute_metrics is not None:
+            eval_metrics = self.compute_metrics(eval_dict)
+            eval_metrics = {'eval_' + k: v for k,v in eval_metrics.items()}
+        else:
+            eval_metrics = {}
+
         return eval_metrics
 
     def __should_stop_train(self) -> bool:
@@ -116,3 +131,8 @@ class MyTrainer():
         if (self.train_step % self.save_steps) == 0:
             return True
         return False 
+    
+    def __should_log(self) -> bool:
+        if (self.train_step % self.log_steps) == 0:
+            return True
+        return False
