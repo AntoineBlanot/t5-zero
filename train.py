@@ -57,7 +57,7 @@ def compute_metrics(outputs_dict: dict) -> dict:
 # Trainer
 trainer =  MyTrainer(
     model=model, train_loader=train_loader, eval_loader=eval_loader,
-    criterion=criterion, optimizer=optimizer,
+    criterion=criterion, optimizer=optimizer, compute_metrics=compute_metrics,
     **train_cfg
 )
 
