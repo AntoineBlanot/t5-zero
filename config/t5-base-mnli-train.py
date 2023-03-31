@@ -7,7 +7,7 @@ from data.preprocess import PaddingCollator
 
 
 config = dict(
-    name='t5-1',
+    name='t5-base',
     model_cfg=dict(
         cls=MyModel,
         name='t5-base',
@@ -16,7 +16,7 @@ config = dict(
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
         pretrained_model_name_or_path='t5-base',
-        model_max_length=512
+        model_max_length=200
     ),
     data_cfg=dict(
         cls=MultiNLIDataset
@@ -35,12 +35,17 @@ config = dict(
             warmup_init=False,
             lr=1e-3
         ),
-        output_dir='t5-1-base',
-        train_batch_size=8,
-        eval_batch_size=8,
+        output_dir='t5-base-mnli',
+        train_batch_size=32,
+        eval_batch_size=32,
         device='cuda',
-        max_train_steps=100000,
-        eval_steps= 5000,
-        save_steps= 5000
+        max_train_steps=12272*3,
+        eval_steps= 4000,
+        save_steps= 4000,
+        log_steps= 4000,
+        logger=dict(
+            project='t5-zero',
+            name='t5-base-mnli'
+        )
     )
 )

@@ -16,12 +16,12 @@ config = dict(
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
         pretrained_model_name_or_path='t5-base',
-        model_max_length=512
+        model_max_length=200
     ),
     data_cfg=dict(
         cls=DummyDataset,
         n=100,
-        l=512
+        l=200
     ),
     collator_cfg=dict(
         cls=PaddingCollator
@@ -38,16 +38,12 @@ config = dict(
             lr=1e-3
         ),
         output_dir='test',
-        train_batch_size=2,
-        eval_batch_size=2,
-        device='cpu',
-        max_train_steps=21,
+        train_batch_size=32,
+        eval_batch_size=32,
+        device='cuda',
+        max_train_steps=20,
         eval_steps= 10,
         save_steps= 10,
-        log_steps= 10,
-        logger=dict(
-            project='t5-zero',
-            name='test'
-        )
+        log_steps= 10
     )
 )
