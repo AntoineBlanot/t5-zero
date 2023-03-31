@@ -15,7 +15,8 @@ config = dict(
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='t5-large'
+        pretrained_model_name_or_path='t5-large',
+        model_max_length=512
     ),
     data_cfg=dict(
         cls=MultiNLIDataset
