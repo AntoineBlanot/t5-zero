@@ -11,8 +11,8 @@ class MyTrainer():
 
     def __init__(self,
         model: nn.Module,
-        train_loader: DataLoader, eval_loader: DataLoader,
-        criterion: nn.Module, optimizer: optim, compute_metrics: callable = None,
+        train_loader: DataLoader = None, eval_loader: DataLoader = None,
+        criterion: nn.Module = None , optimizer: optim = None, compute_metrics: callable = None,
         output_dir: str = '.', device: str = 'cpu',
         max_train_steps: int = None, eval_steps : int = None, save_steps: int = None, log_steps: int = None,
         logger: dict = None
@@ -28,7 +28,7 @@ class MyTrainer():
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         self.device = device
 
-        default_steps = len(train_loader)
+        default_steps = len(train_loader) if train_loader is not None else 0
         self.max_train_steps = max_train_steps if max_train_steps is not None else default_steps
         self.eval_steps = eval_steps if eval_steps is not None else max_train_steps
         self.save_steps = save_steps if save_steps is not None else max_train_steps
