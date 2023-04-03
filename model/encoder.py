@@ -1,7 +1,7 @@
 import torch
 from torch import Tensor, nn
 
-from transformers import T5EncoderModel
+from transformers import T5EncoderModel, BertModel
 
 
 class T5Encoder(nn.Module):
@@ -16,12 +16,12 @@ class T5Encoder(nn.Module):
         return last_hidden_state
 
 
-class NLIHead(nn.Module):
+class BertEncoder(nn.Module):
 
-    def __init__(self, n_class: int, d_model: int, *args, **kwargs) -> None:
+    def __init__(self, name: str, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.n_class = n_class
-        self.layer = nn.Linear(d_model, n_class)
+        self.model = BertModel.from_pretrained(name)
 
-    def forward(self, x: Tensor) -> Tensor:
-        return self.layer(x)
+    def forward(self, *args, **kwargs) -> Tensor:
+        last_hidden_state = self.model.forward(*args, **kwargs).last_hidden_state
+        return last_hidden_state
