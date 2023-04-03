@@ -1,7 +1,7 @@
 from torch.nn import CrossEntropyLoss
 from transformers import Adafactor, AutoTokenizer
 
-from model.modeling import MyModel
+from model.modeling import T5Classification
 from data.dataset import DummyDataset
 from data.preprocess import PaddingCollator
 
@@ -9,7 +9,7 @@ from data.preprocess import PaddingCollator
 config = dict(
     name='t5-1',
     model_cfg=dict(
-        cls=MyModel,
+        cls=T5Classification,
         name='t5-base',
         n_class=3
     ),

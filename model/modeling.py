@@ -5,7 +5,7 @@ from model.encoder import T5Encoder, BertEncoder
 from model.head import NLIHead
 from model.pooling import Pooling
 
-class MyModel(nn.Module):
+class T5Classification(nn.Module):
 
     def __init__(self, name: str, n_class: int, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
