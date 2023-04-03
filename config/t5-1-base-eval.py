@@ -22,7 +22,9 @@ config = dict(
         model_max_length=512
     ),
     data_cfg=dict(
-        cls=MultiNLIDataset
+        cls=MultiNLIDataset,
+        do_tokenize=True,
+        do_prompt=True
     ),
     collator_cfg=dict(
         cls=PaddingCollator
