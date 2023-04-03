@@ -12,7 +12,7 @@ class MyTrainer():
     def __init__(self,
         model: nn.Module,
         train_loader: DataLoader = None, eval_loader: DataLoader = None,
-        criterion: nn.Module = None , optimizer: optim = None, compute_metrics: callable = None,
+        criterion: nn.Module = None , optimizer: optim = None, scheduler: optim = None, compute_metrics: callable = None,
         output_dir: str = '.', device: str = 'cpu',
         max_train_steps: int = None, eval_steps : int = None, save_steps: int = None, log_steps: int = None,
         logger: dict = None
@@ -22,6 +22,7 @@ class MyTrainer():
         self.eval_loader = eval_loader
         self.criterion = criterion
         self.optimizer = optimizer
+        self.scheduler = scheduler
         self.compute_metrics = compute_metrics
 
         self.output_dir = output_dir
@@ -67,8 +68,9 @@ class MyTrainer():
                 train_loss.backward()
 
                 self.optimizer.step()
+                self.scheduler.step()
 
-                train_metrics = dict(train_epoch=round(self.train_step/len(self.train_loader), 4), train_loss=train_loss.item())
+                train_metrics = dict(train_epoch=round(self.train_step/len(self.train_loader), 4), train_loss=train_loss.item(), train_lr=self.scheduler.get_last_lr()[0])
                 self.all_train_metrics.update({k: self.all_train_metrics.get(k, []) + [v] for k,v in train_metrics.items()})
 
                 if self.__should_eval():
@@ -78,7 +80,7 @@ class MyTrainer():
 
                 if self.__should_log():
                     log_metrics = {
-                        **{k: np.asarray(v).mean() if k != 'train_epoch' else v[-1] for k,v in self.all_train_metrics.items()},
+                        **{k: np.asarray(v).mean() if k not in ['train_epoch', 'train_lr'] else v[-1] for k,v in self.all_train_metrics.items()},
                         **self.all_eval_metrics
                     }
                     train_pbar.set_postfix(log_metrics)

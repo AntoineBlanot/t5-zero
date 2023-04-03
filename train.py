@@ -30,6 +30,9 @@ criterion = criterion_cfg.pop('cls')(**criterion_cfg)
 # Optimizer
 optimizer_cfg = train_cfg.pop('optimizer')
 optimizer = optimizer_cfg.pop('cls')(model.parameters(), **optimizer_cfg)
+# LR Scheduler
+scheduler_cfg = train_cfg.pop('scheduler')
+scheduler = scheduler_cfg.pop('cls')(optimizer, **scheduler_cfg)
 # Data loaders
 train_loader = DataLoader(train_data, batch_size=train_cfg.pop('train_batch_size'), collate_fn=collator)
 eval_loader = DataLoader(eval_data, batch_size=train_cfg.pop('eval_batch_size'), collate_fn=collator)
@@ -57,7 +60,7 @@ def compute_metrics(outputs_dict: dict) -> dict:
 # Trainer
 trainer =  MyTrainer(
     model=model, train_loader=train_loader, eval_loader=eval_loader,
-    criterion=criterion, optimizer=optimizer, compute_metrics=compute_metrics,
+    criterion=criterion, optimizer=optimizer, scheduler=scheduler, compute_metrics=compute_metrics,
     **train_cfg
 )
 
