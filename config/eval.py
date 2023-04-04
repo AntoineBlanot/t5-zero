@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from torch.nn import CrossEntropyLoss
-from torch.optim.lr_scheduler import StepLR
+import torch.nn as nn
+import torch.optim.lr_scheduler as lr_scheduler
+
 from transformers import AutoTokenizer
 
 from model.modeling import T5Classification
@@ -32,10 +33,10 @@ config = dict(
     ),
     train_cfg=dict(
         criterion=dict(
-            cls=CrossEntropyLoss
+            cls=nn.CrossEntropyLoss
         ),
         scheduler=dict(
-            cls=StepLR,
+            cls=lr_scheduler.StepLR,
             step_size=12272,
             gamma=0.1
         ),

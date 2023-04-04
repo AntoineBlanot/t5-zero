@@ -1,5 +1,7 @@
-from torch.nn import CrossEntropyLoss
-from torch.optim import Adam
+import torch.nn as nn
+import torch. optim as optim
+import torch.optim.lr_scheduler as lr_scheduler
+
 from transformers import AutoTokenizer
 
 from model.modeling import BERTClassification
@@ -8,7 +10,7 @@ from data.preprocess import PaddingCollator
 
 
 config = dict(
-    name='bert-base-mnli',
+    name='bert-base-mnli-dec',
     model_cfg=dict(
         cls=BERTClassification,
         name='bert-base-uncased',
@@ -29,13 +31,18 @@ config = dict(
     ),
     train_cfg=dict(
         criterion=dict(
-            cls=CrossEntropyLoss
+            cls=nn.CrossEntropyLoss
         ),
         optimizer=dict(
-            cls=Adam,
-            lr=2e-5
+            cls=optim.Adam,
+            lr=2e-5,
+            weight_decay=1e-3
         ),
-        output_dir='exp/bert-base-mnli',
+        scheduler=dict(
+            cls=lr_scheduler.LambdaLR,
+            lr_lambda=lambda epoch: 2e-5,
+        ),
+        output_dir='exp/bert-base-mnli-dec',
         train_batch_size=32,
         eval_batch_size=32,
         device='cuda',
@@ -45,7 +52,7 @@ config = dict(
         log_steps= 4000,
         logger=dict(
             project='t5-zero',
-            name='bert-base-mnli'
+            name='bert-base-mnli-dec'
         )
     )
 )

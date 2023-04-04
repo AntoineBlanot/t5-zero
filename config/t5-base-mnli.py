@@ -1,5 +1,6 @@
-from torch.nn import CrossEntropyLoss
-from torch.optim.lr_scheduler import StepLR
+import torch.nn as nn
+import torch.optim.lr_scheduler as lr_scheduler
+
 from transformers import Adafactor, AutoTokenizer
 
 from model.modeling import T5Classification
@@ -8,7 +9,7 @@ from data.preprocess import PaddingCollator
 
 
 config = dict(
-    name='t5-base',
+    name='t5-base-mnli-sched-dec',
     model_cfg=dict(
         cls=T5Classification,
         name='t5-base',
@@ -29,21 +30,22 @@ config = dict(
     ),
     train_cfg=dict(
         criterion=dict(
-            cls=CrossEntropyLoss
+            cls=nn.CrossEntropyLoss
         ),
         optimizer=dict(
             cls=Adafactor,
             scale_parameter=False,
             relative_step=False,
             warmup_init=False,
-            lr=1e-3
+            lr=1e-3,
+            weight_decay=1e-3
         ),
         scheduler=dict(
-            cls=StepLR,
+            cls=lr_scheduler.StepLR,
             step_size=12272,
             gamma=0.1
         ),
-        output_dir='exp/t5-base-mnli-sched',
+        output_dir='exp/t5-base-mnli-sched-dec',
         train_batch_size=32,
         eval_batch_size=32,
         device='cuda',
@@ -53,7 +55,7 @@ config = dict(
         log_steps= 4000,
         logger=dict(
             project='t5-zero',
-            name='t5-base-mnli-sched'
+            name='t5-base-mnli-sched-dec'
         )
     )
 )
