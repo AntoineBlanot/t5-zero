@@ -60,5 +60,5 @@ trainer =  MyTrainer(
 )
 
 metrics = trainer.evaluate()
-print('Training is over')
+print('Evaluation is over')
 print(metrics)
