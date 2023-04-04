@@ -1,3 +1,3 @@
-CONFIG_FILE='t5-1-base-2'
+CONFIG_FILE='eval'
 
 python eval.py --config_file $CONFIG_FILE
