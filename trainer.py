@@ -42,7 +42,6 @@ class MyTrainer():
         """
         Training entry point.
         """
-
         self.model.train()
         train_pbar = tqdm(range(self.max_train_steps), desc='Training')
         self.train_step = 0
