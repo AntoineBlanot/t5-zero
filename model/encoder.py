@@ -20,6 +20,7 @@ class BertEncoder(nn.Module):
 
     def __init__(self, name: str, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        BertModel._keys_to_ignore_on_load_unexpected = ["cls.*"]
         self.model = BertModel.from_pretrained(name)
 
     def forward(self, *args, **kwargs) -> Tensor:
