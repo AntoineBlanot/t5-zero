@@ -1,17 +1,18 @@
 import torch.nn as nn
+import torch. optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 
-from transformers import Adafactor, AutoTokenizer
+from transformers import AutoTokenizer, Adafactor
 
-from model.modeling import T5Classification
-from data.dataset import MultiNLIDataset
-from data.preprocess import PaddingCollator
+import model.modeling as models
+import data.dataset as datasets
+import data.preprocess as preprocesses
 
 
 config = dict(
-    name='t5-base-mnli-sched-dec',
+    name='t5-base-mnli-sched',
     model_cfg=dict(
-        cls=T5Classification,
+        cls=models.T5Classification,
         name='t5-base',
         n_class=3
     ),
@@ -21,14 +22,14 @@ config = dict(
         model_max_length=200
     ),
     data_cfg=dict(
-        cls=MultiNLIDataset,
+        cls=datasets.MultiNLIDataset,
         do_tokenize=True,
         do_prompt=True
     ),
     collator_cfg=dict(
-        cls=PaddingCollator
+        cls=preprocesses.PaddingCollator
     ),
-    train_cfg=dict(
+    engine_cfg=dict(
         criterion=dict(
             cls=nn.CrossEntropyLoss
         ),
@@ -37,15 +38,14 @@ config = dict(
             scale_parameter=False,
             relative_step=False,
             warmup_init=False,
-            lr=1e-3,
-            weight_decay=1e-3
+            lr=1e-3
         ),
         scheduler=dict(
             cls=lr_scheduler.StepLR,
             step_size=12272,
             gamma=0.1
         ),
-        output_dir='exp/t5-base-mnli-sched-dec',
+        output_dir='exp/t5-base-mnli-sched',
         train_batch_size=32,
         eval_batch_size=32,
         device='cuda',
@@ -55,7 +55,7 @@ config = dict(
         log_steps= 4000,
         logger=dict(
             project='t5-zero',
-            name='t5-base-mnli-sched-dec'
+            name='t5-base-mnli-sched'
         )
     )
 )
