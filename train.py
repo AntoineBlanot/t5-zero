@@ -57,7 +57,7 @@ def compute_metrics(outputs_dict: dict) -> dict:
     return {**dict(loss=loss), **acc, **rec, **prec, **f1}
 
 
-# Trainer
+# Engine
 engine =  Engine(
     model=model, train_loader=train_loader, eval_loader=eval_loader,
     criterion=criterion, optimizer=optimizer, scheduler=scheduler, compute_metrics=compute_metrics,
