@@ -4,7 +4,7 @@ import importlib
 from evaluate import load
 from torch.utils.data import DataLoader
 
-from trainer import MyTrainer
+from engine import Engine
 
 
 parser = argparse.ArgumentParser()
@@ -12,7 +12,7 @@ parser.add_argument('--config_file', type=str)
 args = parser.parse_args()
 
 config = importlib.import_module('config.' + args.config_file).config
-model_cfg, tokenizer_cfg, data_cfg, collator_cfg, train_cfg = config['model_cfg'], config['tokenizer_cfg'], config['data_cfg'], config['collator_cfg'], config['train_cfg']
+model_cfg, tokenizer_cfg, data_cfg, collator_cfg, engine_cfg = config['model_cfg'], config['tokenizer_cfg'], config['data_cfg'], config['collator_cfg'], config['engine_cfg']
 
 # Model
 model = model_cfg.pop('cls')(**model_cfg)
@@ -25,17 +25,17 @@ dataset_cls = data_cfg.pop('cls')
 train_data = dataset_cls(split='train', tokenizer=tokenizer, **data_cfg)
 eval_data = dataset_cls(split='validation_matched', tokenizer=tokenizer, **data_cfg)
 # Criterion
-criterion_cfg = train_cfg.pop('criterion')
+criterion_cfg = engine_cfg.pop('criterion')
 criterion = criterion_cfg.pop('cls')(**criterion_cfg)
 # Optimizer
-optimizer_cfg = train_cfg.pop('optimizer')
+optimizer_cfg = engine_cfg.pop('optimizer')
 optimizer = optimizer_cfg.pop('cls')(model.parameters(), **optimizer_cfg)
 # LR Scheduler
-scheduler_cfg = train_cfg.pop('scheduler')
+scheduler_cfg = engine_cfg.pop('scheduler')
 scheduler = scheduler_cfg.pop('cls')(optimizer, **scheduler_cfg)
 # Data loaders
-train_loader = DataLoader(train_data, batch_size=train_cfg.pop('train_batch_size'), collate_fn=collator)
-eval_loader = DataLoader(eval_data, batch_size=train_cfg.pop('eval_batch_size'), collate_fn=collator)
+train_loader = DataLoader(train_data, batch_size=engine_cfg.pop('train_batch_size'), collate_fn=collator)
+eval_loader = DataLoader(eval_data, batch_size=engine_cfg.pop('eval_batch_size'), collate_fn=collator)
 
 
 def compute_metrics(outputs_dict: dict) -> dict:
@@ -58,12 +58,12 @@ def compute_metrics(outputs_dict: dict) -> dict:
 
 
 # Trainer
-trainer =  MyTrainer(
+engine =  Engine(
     model=model, train_loader=train_loader, eval_loader=eval_loader,
     criterion=criterion, optimizer=optimizer, scheduler=scheduler, compute_metrics=compute_metrics,
-    **train_cfg
+    **engine_cfg
 )
 
-metrics = trainer.train()
+metrics = engine.train()
 print('Training is over')
 print(metrics)

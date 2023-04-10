@@ -5,7 +5,7 @@ from evaluate import load
 import torch
 from torch.utils.data import DataLoader
 
-from trainer import MyTrainer
+from engine import Engine
 
 
 parser = argparse.ArgumentParser()
@@ -13,7 +13,7 @@ parser.add_argument('--config_file', type=str)
 args = parser.parse_args()
 
 config = importlib.import_module('config.' + args.config_file).config
-model_cfg, tokenizer_cfg, data_cfg, collator_cfg, train_cfg = config['model_cfg'], config['tokenizer_cfg'], config['data_cfg'], config['collator_cfg'], config['train_cfg']
+model_cfg, tokenizer_cfg, data_cfg, collator_cfg, engine_cfg = config['model_cfg'], config['tokenizer_cfg'], config['data_cfg'], config['collator_cfg'], config['engine_cfg']
 
 # Model
 save_path = model_cfg.pop('save_path')
@@ -27,10 +27,10 @@ collator = collator_cfg.pop('cls')(tokenizer=tokenizer, **collator_cfg)
 dataset_cls = data_cfg.pop('cls')
 eval_data = dataset_cls(split='validation_matched', tokenizer=tokenizer, **data_cfg)
 # Criterion
-criterion_cfg = train_cfg.pop('criterion')
+criterion_cfg = engine_cfg.pop('criterion')
 criterion = criterion_cfg.pop('cls')(**criterion_cfg)
 # Data loaders
-eval_loader = DataLoader(eval_data, batch_size=train_cfg.pop('eval_batch_size'), collate_fn=collator)
+eval_loader = DataLoader(eval_data, batch_size=engine_cfg.pop('eval_batch_size'), collate_fn=collator)
 
 
 def compute_metrics(outputs_dict: dict) -> dict:
@@ -52,13 +52,13 @@ def compute_metrics(outputs_dict: dict) -> dict:
     return {**dict(loss=loss), **acc, **rec, **prec, **f1}
 
 
-# Trainer
-trainer =  MyTrainer(
+# Engine
+engine =  Engine(
     model=model, eval_loader=eval_loader,
     criterion=criterion, compute_metrics=compute_metrics,
-    **train_cfg
+    **engine_cfg
 )
 
-metrics = trainer.evaluate()
+metrics = engine.evaluate()
 print('Evaluation is over')
 print(metrics)
