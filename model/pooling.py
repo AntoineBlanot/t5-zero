@@ -176,3 +176,17 @@ class Pooling(nn.Module):
             config = json.load(fIn)
 
         return Pooling(**config)
+    
+
+class AttentionPooling(nn.Module):
+
+    def __init__(self, n_query: int, d_model: int, nhead: int, dim_feedforward: int = 2048, dropout: float = 0.1, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.query = nn.Linear(d_model, n_query).weight
+        self.transformer = nn.TransformerDecoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, dropout=dropout, batch_first=True)
+
+    def forward(self, x, mask):
+        B, L, H = x.shape
+        q = self.query.unsqueeze(0).expand(B, -1, -1)
+        x = self.transformer(tgt=q, memory=x, memory_key_padding_mask=mask)
+        return x
