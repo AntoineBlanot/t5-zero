@@ -34,8 +34,8 @@ class ZeroShotPredictor():
 
                 outputs = self.model(**inputs)
 
-                all_outputs.append(outputs['head_outputs'].detach())
-                all_labels.append(labels)
+                all_outputs.append(outputs['head_outputs'].detach().cpu())
+                all_labels.append(labels.cpu())
                 all_metadata.append(metadata)
 
         metadata_dict = {k: sum([x[k] for x in all_metadata], []) for k in all_metadata[0].keys()}
