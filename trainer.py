@@ -13,7 +13,7 @@ class MyTrainer():
         model: nn.Module,
         train_loader: DataLoader = None, eval_loader: DataLoader = None,
         criterion: nn.Module = None , optimizer: optim = None, scheduler: optim = None, compute_metrics: callable = None,
-        output_dir: str = '.', device: str = 'cpu',
+        output_dir: str = '.', device: str = 'cpu', seed: int = 2023,
         max_train_steps: int = None, eval_steps : int = None, save_steps: int = None, log_steps: int = None,
         logger: dict = None
     ) -> None:
@@ -28,6 +28,9 @@ class MyTrainer():
         self.output_dir = output_dir
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         self.device = device
+        self.seed = seed
+        torch.manual_seed(self.seed)
+
 
         default_steps = len(train_loader) if train_loader is not None else 0
         self.max_train_steps = max_train_steps if max_train_steps is not None else default_steps
