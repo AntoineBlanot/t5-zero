@@ -59,6 +59,22 @@ class BERTClassification(nn.Module):
         return outputs_dict
 
 
+class BinaryBERTClassification(nn.Module):
+
+    def __init__(self, name: str, n_class: int, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.encoder = BertEncoder(name=name)
+        self.head = NLIHead(n_class=n_class, d_model=self.encoder.model.config.hidden_size)
+
+    def forward(self, input_ids: Tensor, attention_mask: Tensor) -> dict:
+        encoder_outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
+        pooled_outputs = encoder_outputs[:, 0, :]   # [CLS] token
+        head_outputs = self.head(pooled_outputs).squeeze()
+
+        outputs_dict = dict(encoder_outputs=encoder_outputs, pooled_outputs=pooled_outputs, head_outputs=head_outputs)
+        return outputs_dict
+
+
 class ZeroShotModel(nn.Module):
 
     def __init__(self, model: nn.Module, true_id: int, false_id: int, *args, **kwargs) -> None:
@@ -68,7 +84,7 @@ class ZeroShotModel(nn.Module):
         self.false_id = false_id
 
     def forward(self, input_ids: Tensor, attention_mask: Tensor, **kwargs) -> Tensor:
-        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, **kwargs)[0].squeeze()
+        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, **kwargs)['head_outputs'].squeeze()
         outputs = outputs[:, [self.true_id, self.false_id]]
 
         outputs_dict = dict(head_outputs=outputs)
@@ -82,6 +98,11 @@ class BARTMNLI(ZeroShotModel):
         contra_id, neutral_id, entail_id = 0, 1, 2
         super().__init__(model=model, true_id=entail_id, false_id=contra_id, *args, **kwargs)
 
+    def forward(self, input_ids: Tensor, attention_mask: Tensor) -> Tensor:
+        model_outputs = super().forward(input_ids, attention_mask)
+        output_dict = dict(head_outputs=model_outputs)
+        return output_dict
+
 
 class UniEval(ZeroShotModel):
 
@@ -94,6 +115,22 @@ class UniEval(ZeroShotModel):
         B, L = input_ids.shape
         decoder_input_ids = torch.full((B, 1), self.model.config.pad_token_id).long().to(self.model.device)
         
-        outputs = super().forward(input_ids, attention_mask, decoder_input_ids=decoder_input_ids)
-        return outputs
+        model_outputs = super().forward(input_ids, attention_mask, decoder_input_ids=decoder_input_ids)
+        output_dict = dict(head_outputs=model_outputs)
+        return output_dict
     
+
+class BERTMNLI(ZeroShotModel):
+
+    def __init__(self, name: str, n_class: int, *args, **kwargs) -> None:
+        model = BERTClassification(name=name, n_class=n_class, *args, **kwargs)
+        contra_id, neutral_id, entail_id = 2, 1, 0
+        super().__init__(model=model, true_id=entail_id, false_id=contra_id, *args, **kwargs)
+
+
+class T5MNLI(ZeroShotModel):
+
+    def __init__(self, name: str, n_class: int, *args, **kwargs) -> None:
+        model = T5Classification(name=name, n_class=n_class, *args, **kwargs)
+        contra_id, neutral_id, entail_id = 2, 1, 0
+        super().__init__(model=model, true_id=entail_id, false_id=contra_id, *args, **kwargs)
