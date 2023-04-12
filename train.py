@@ -2,8 +2,8 @@ import argparse
 import importlib
 
 from evaluate import load
+import torch
 from torch.utils.data import DataLoader
-
 from engine import Engine
 
 
@@ -36,16 +36,28 @@ scheduler = scheduler_cfg.pop('cls')(optimizer, **scheduler_cfg)
 # Data loaders
 train_loader = DataLoader(train_data, batch_size=engine_cfg.pop('train_batch_size'), collate_fn=collator)
 eval_loader = DataLoader(eval_data, batch_size=engine_cfg.pop('eval_batch_size'), collate_fn=collator)
-
+# Metrics
+accuracy_metric = load("accuracy")
+recall_metric = load("recall")
+precision_metric = load("precision")
+f1_metric = load("f1")
 
 def compute_metrics(outputs_dict: dict) -> dict:
-    accuracy_metric = load("accuracy")
-    recall_metric = load("recall")
-    precision_metric = load("precision")
-    f1_metric = load("f1")
-
     outputs = outputs_dict['outputs']
     predictions = outputs.argmax(-1)
+    labels = outputs_dict['labels']
+
+    loss = outputs_dict['loss'].mean(-1).item()
+    acc = accuracy_metric.compute(predictions=predictions, references=labels)
+    rec = recall_metric.compute(predictions=predictions, references=labels, average='macro')
+    prec = precision_metric.compute(predictions=predictions, references=labels, average='macro')
+    f1 = f1_metric.compute(predictions=predictions, references=labels, average='macro')
+
+    return {**dict(loss=loss), **acc, **rec, **prec, **f1}
+
+def compute_metrics_binary(outputs_dict: dict) -> dict:
+    outputs = outputs_dict['outputs']
+    predictions = torch.where(outputs.sigmoid() > 0.5, 1, 0)
     labels = outputs_dict['labels']
 
     loss = outputs_dict['loss'].mean(-1).item()
@@ -60,7 +72,7 @@ def compute_metrics(outputs_dict: dict) -> dict:
 # Engine
 engine =  Engine(
     model=model, train_loader=train_loader, eval_loader=eval_loader,
-    criterion=criterion, optimizer=optimizer, scheduler=scheduler, compute_metrics=compute_metrics,
+    criterion=criterion, optimizer=optimizer, scheduler=scheduler, compute_metrics=compute_metrics_binary,
     **engine_cfg
 )
 

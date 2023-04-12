@@ -31,14 +31,13 @@ criterion_cfg = engine_cfg.pop('criterion')
 criterion = criterion_cfg.pop('cls')(**criterion_cfg)
 # Data loaders
 eval_loader = DataLoader(eval_data, batch_size=engine_cfg.pop('eval_batch_size'), collate_fn=collator)
-
+# Metrics
+accuracy_metric = load("accuracy")
+recall_metric = load("recall")
+precision_metric = load("precision")
+f1_metric = load("f1")
 
 def compute_metrics(outputs_dict: dict) -> dict:
-    accuracy_metric = load("accuracy")
-    recall_metric = load("recall")
-    precision_metric = load("precision")
-    f1_metric = load("f1")
-
     outputs = outputs_dict['outputs']
     predictions = outputs.argmax(-1)
     labels = outputs_dict['labels']
