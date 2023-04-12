@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import torch.nn as nn
 from transformers import AutoTokenizer
 
 import model.modeling as models
@@ -23,7 +22,7 @@ config = dict(
         cls=datasets.ZeroShotDataset,
         do_tokenize=True,
         do_prompt=True,
-        files=[str(x) for x in Path('/home/chikara/data/zero-shot-intent/demos/').glob('yes-no_collected_clean.json')]
+        files=[str(x) for x in Path('/home/chikara/data/zero-shot-intent/demos/').glob('hospital_collected_clean.json')]
     ),
     collator_cfg=dict(
         cls=preprocesses.ZeroShotPaddingCollator,

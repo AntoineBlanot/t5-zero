@@ -1,6 +1,7 @@
 import argparse
 import importlib
 
+from sklearn.metrics import confusion_matrix
 from evaluate import load
 import torch
 from torch.utils.data import DataLoader
@@ -20,7 +21,7 @@ if 'save_path' in model_cfg.keys():
     print('Loading from checkpoint')
     save_path = model_cfg.pop('save_path')
     model = model_cfg.pop('cls')(**model_cfg)
-    model.load_state_dict(torch.load(save_path, map_location=engine_cfg['device']))
+    model.model.load_state_dict(torch.load(save_path, map_location=engine_cfg['device']))
 else:
     print('Loading from pretrained')
     model = model_cfg.pop('cls')(**model_cfg)
@@ -40,21 +41,30 @@ precision_metric = load("precision")
 f1_metric = load("f1")
 
 
-def compute_metrics(outputs_dict: dict) -> dict:
+def compute_metrics(outputs_dict: dict, softmax_dim: int = 0) -> dict:
+    """
+    Compute metrics
+    Args:
+        - outputs_dict: models outputs format as dict
+        - softmax_dim: dimension to perform softmax (0 for only True class, 1 for True and False classes)
+    Returns:
+        - dict of metrics
+    """
     outputs = outputs_dict['outputs']
     groups = outputs_dict['group']
 
     group_count = [groups.count(g) for g in set(groups)]
     grouped_outputs = torch.split(outputs, group_count)
 
-    probs = [x.softmax(-1)[:, 0] for x in grouped_outputs]
-    predictions = simple_rules(probs)
+    probs = [x.softmax(softmax_dim)[:, 0] for x in grouped_outputs]
+    predictions = complex_rules(probs)
 
     labels = outputs_dict['labels']
     labels = torch.split(labels, group_count)
     labels = [x[0].item() for x in labels]
 
     print([(l, p, x) for l, p, x in zip(labels, predictions, probs)])
+    print(confusion_matrix(y_true=labels, y_pred=predictions))
 
     acc = accuracy_metric.compute(predictions=predictions, references=labels)
     rec = recall_metric.compute(predictions=predictions, references=labels, average='macro')
@@ -63,12 +73,16 @@ def compute_metrics(outputs_dict: dict) -> dict:
 
     return {**acc, **rec, **prec, **f1}
 
-def simple_rules(probs: list) -> list:
+def simple_rules(probs: list, threshold: float = 0.8) -> list:
     """
     Compute simple prediction rules
+    Args:
+        - probs: list of probabilities
+        - threshold: if probabiliy is under, considered as fallback
+    Return:
+        - list of predictions
     """
     results = []
-    threshold = 0.6
     for x in probs:
         if torch.max(x) >= threshold:
             results.append(torch.argmax(x).item())
@@ -79,6 +93,10 @@ def simple_rules(probs: list) -> list:
 def complex_rules(probs: list) -> list:
     """
     Compute complex predictions rules
+    Args:
+        - probs: list of probabilities
+    Return:
+        - list of predictions
     """
 
     results = []
