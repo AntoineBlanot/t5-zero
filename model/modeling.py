@@ -1,7 +1,10 @@
 import torch
 from torch import Tensor, nn
 
-from transformers import AutoModelForSeq2SeqLM, AutoModelForSequenceClassification
+from transformers import (
+    AutoModelForSeq2SeqLM, AutoModelForSequenceClassification,
+    BartConfig, BartForSequenceClassification
+)
 
 from model.encoder import T5Encoder, BertEncoder
 from model.head import NLIHead
@@ -72,6 +75,22 @@ class BinaryBERTClassification(nn.Module):
         head_outputs = self.head(pooled_outputs).squeeze()
 
         outputs_dict = dict(encoder_outputs=encoder_outputs, pooled_outputs=pooled_outputs, head_outputs=head_outputs)
+        return outputs_dict
+    
+
+class BARTClassification(nn.Module):
+
+    def __init__(self, name: str, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        id2label = {'0': 'entailment', '1': 'neutral', '2': 'contradiction'}
+        label2id = {v: int(k) for k,v in id2label.items()}
+        num_labels = len(id2label)
+        config = BartConfig(id2label=id2label, label2id=label2id, num_labels=num_labels)
+        self.encoder_decoder = BartForSequenceClassification.from_pretrained(name, config=config)
+
+    def forward(self, *args, **kwargs):
+        outputs = self.encoder_decoder(*args, **kwargs).logits
+        outputs_dict = dict(head_outputs=outputs)
         return outputs_dict
 
 
