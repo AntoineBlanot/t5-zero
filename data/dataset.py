@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 
 from transformers import AutoTokenizer
 from datasets import load_dataset, Value
-
+from data.prompt import BasePromptClass
 
 class DummyDataset(Dataset):
 
@@ -27,152 +27,113 @@ class DummyDataset(Dataset):
     
     def __getitem__(self, index) -> dict:
         return self.data[index]
-    
 
-class MultiNLIDataset(Dataset):
+class MNLIDataset(Dataset):
 
-    def __init__(self, split: str, tokenizer: AutoTokenizer, do_tokenize: bool = True, do_prompt: bool = True) -> None:
+    def __init__(self, split: str, tokenizer: AutoTokenizer = None, prompt: BasePromptClass = None, to_binary: bool = False) -> None:
         super().__init__()
+        self.data_name = 'multi_nli'
         self.split = split
         self.tokenizer = tokenizer
-        self.data = load_dataset("multi_nli", split=self.split)
-        self.columns_to_keep = set(['input_ids', 'attention_mask', 'label'])
+        self.prompt = prompt
 
-        if do_prompt:
-            self.__prepare_prompt()
-        else:
-            self.__prepare_inputs()
-        print('Data format before tokenizing: \n\t{}'.format(
+        # Load data
+        self.__load_data()
+        # Build prompts
+        self.__build_prompts()
+
+        assert 'input_text' in self.data.column_names, 'column `input_text` is missing'
+
+        print('Data format: \n\t{}'.format(
             '\n\t'.join([f'{k}: {v}' for k,v in self.data[0].items()])
         ))
-
-        if do_tokenize:
-            self.__tokenize()
-        print('Data format after tokenizing: \n\t{}'.format(
-                '\n\t'.join([f'{k}: {v}' for k,v in self.data[0].items()])
-            ))
         
-    def __len__(self):
-        return len(self.data)
+        if to_binary:
+            self.__convert_to_binary()
     
-    def __repr__(self) -> str:
-        return self.data.__repr__()
-    
-    def __prepare_prompt(self) -> None:
-        def prompt_function(examples):
-            input_text = [
-                'hypothesis: {} {} premise: {} {} claim: {}'.format(
-                    'The premise entaills the claim', self.tokenizer.eos_token, premise, self.tokenizer.eos_token, hypothesis
-                )
-                for premise, hypothesis in zip(examples['premise'], examples['hypothesis'])
-            ]
-            return dict(input_text=input_text)
-        self.data = self.data.map(
-            prompt_function, batched=True, load_from_cache_file=False,
-            desc='Preparing prompts for MNLI {} dataset'.format(self.split)
-        )
-
-    def __prepare_inputs(self) -> None:
-        def inputs_function(examples):
-            input_text = [
-                '{} {} {}'.format(premise, self.tokenizer.sep_token, hypothesis)
-                for premise, hypothesis in zip(examples['premise'], examples['hypothesis'])
-            ]
-            return dict(input_text=input_text)
-        self.data = self.data.map(
-            inputs_function, batched=True, load_from_cache_file=False,
-            desc='Preparing inputs for MNLI {} dataset'.format(self.split)
-        )
-    
-    def __tokenize(self):
-        preprocess_function = lambda examples: self.tokenizer(examples['input_text'], truncation=True)
-        tokenized_data = self.data.map(
-            preprocess_function, batched=True, load_from_cache_file=False,
-            desc='Running tokenizer on MNLI {} dataset'.format(self.split)
-        )
-        self.data = tokenized_data.remove_columns(set(tokenized_data.column_names) - self.columns_to_keep)
-    
-    def __getitem__(self, index) -> dict:
-        return self.data[index]
-
-
-class BinaryNLIDataset(Dataset):
-
-    def __init__(self, split: str, tokenizer: AutoTokenizer, do_tokenize: bool = True, do_prompt: bool = True) -> None:
-        super().__init__()
-        self.split = split
-        self.tokenizer = tokenizer
+    def __load_data(self) -> None:
         self.data = load_dataset("multi_nli", split=self.split)
-        def convert_binary(ex):
-            ex['label'] = [1 if x == 0 else 0 for x in ex['label']]
-            return ex
+
+    def __build_prompts(self) -> None:
+        prompt_fn = self.prompt.prompt
         self.data = self.data.map(
-            convert_binary, batched=True, load_from_cache_file=False,
-            desc='Convert MNLI {} dataset to binary dataset'.format(self.split)
+            prompt_fn, batched=True, load_from_cache_file=False, fn_kwargs=dict(tokenizer=self.tokenizer),
+            desc='Preparing prompts for `{}` dataset ({} split)'.format(self.data_name, self.split)
+        )
+    
+    def __convert_to_binary(self) -> None:
+        self.data = self.data.map(
+            lambda examples: examples.update({'label': [1 if x == 0 else 0 for x in examples['label']]}),
+            batched=True, load_from_cache_file=False,
+            desc='Convert `{}` dataset ({} split) to binary'.format(self.data_name, self.split)
         ).cast_column('label', Value('float32'))
 
-        self.columns_to_keep = set(['input_ids', 'attention_mask', 'label'])
+    def __getitem__(self, index) -> dict:
+        return self.data[index]
+    
+    def __len__(self) -> int :
+        return len(self.data)
+    
+    def __repr__(self) -> str:
+        return self.data.__repr__()
 
-        if do_prompt:
-            self.__prepare_prompt()
-        else:
-            self.__prepare_inputs()
-        print('Data format before tokenizing: \n\t{}'.format(
+
+class ZeroDataset(Dataset):
+
+    def __init__(self, split: str, files: list[str], tokenizer: AutoTokenizer = None, prompt: BasePromptClass = None, to_binary: bool = False) -> None:
+        super().__init__()
+        self.data_name = files
+        self.split = split
+        self.tokenizer = tokenizer
+        self.prompt = prompt
+
+        # Load data
+        self.__load_data()
+        # Build prompts
+        self.__build_prompts()
+
+        assert 'input_text' in self.data.column_names, 'column `input_text` is missing'
+        assert 'group' in self.data.column_names, 'column `group` is missing'
+
+        print('Data format: \n\t{}'.format(
             '\n\t'.join([f'{k}: {v}' for k,v in self.data[0].items()])
         ))
 
-        if do_tokenize:
-            self.__tokenize()
-        print('Data format after tokenizing: \n\t{}'.format(
-                '\n\t'.join([f'{k}: {v}' for k,v in self.data[0].items()])
-            ))
-        
-    def __len__(self):
+        if to_binary:
+            self.__convert_to_binary()
+    
+    def __load_data(self) -> None:
+        self.data = load_dataset('json', data_files=self.data_name, split='train')
+
+    def __build_prompts(self) -> None:
+        prompt_fn = self.prompt.prompt
+        self.data = self.data.map(
+            prompt_fn, with_indices=True, batched=True, load_from_cache_file=False, fn_kwargs=dict(tokenizer=self.tokenizer),
+            desc='Preparing prompts for `{}` dataset ({} split)'.format(self.data_name, self.split),
+            remove_columns=self.data.column_names
+        )
+    
+    def __convert_to_binary(self) -> None:
+        self.data = self.data.map(
+            lambda examples: examples.update({'label': [1 if x == 0 else 0 for x in examples['label']]}),
+            batched=True, load_from_cache_file=False,
+            desc='Convert `{}` dataset ({} split) to binary'.format(self.data_name, self.split)
+        ).cast_column('label', Value('float32'))
+
+    def __getitem__(self, index) -> dict:
+        return self.data[index]
+    
+    def __len__(self) -> int :
         return len(self.data)
     
     def __repr__(self) -> str:
         return self.data.__repr__()
     
-    def __prepare_prompt(self) -> None:
-        def prompt_function(examples):
-            input_text = [
-                'hypothesis: {} {} premise: {} {} claim: {}'.format(
-                    'The premise entaills the claim', self.tokenizer.eos_token, premise, self.tokenizer.eos_token, hypothesis
-                )
-                for premise, hypothesis in zip(examples['premise'], examples['hypothesis'])
-            ]
-            return dict(input_text=input_text)
-        self.data = self.data.map(
-            prompt_function, batched=True, load_from_cache_file=False,
-            desc='Preparing prompts for MNLI {} dataset'.format(self.split)
-        )
-
-    def __prepare_inputs(self) -> None:
-        def inputs_function(examples):
-            input_text = [
-                '{} {} {}'.format(premise, self.tokenizer.sep_token, hypothesis)
-                for premise, hypothesis in zip(examples['premise'], examples['hypothesis'])
-            ]
-            return dict(input_text=input_text)
-        self.data = self.data.map(
-            inputs_function, batched=True, load_from_cache_file=False,
-            desc='Preparing inputs for MNLI {} dataset'.format(self.split)
-        )
-    
-    def __tokenize(self):
-        preprocess_function = lambda examples: self.tokenizer(examples['input_text'], truncation=True)
-        tokenized_data = self.data.map(
-            preprocess_function, batched=True, load_from_cache_file=False,
-            desc='Running tokenizer on MNLI {} dataset'.format(self.split)
-        )
-        self.data = tokenized_data.remove_columns(set(tokenized_data.column_names) - self.columns_to_keep)
-    
-    def __getitem__(self, index) -> dict:
-        return self.data[index]
-
 
 class ZeroShotDataset(Dataset):
-
+    """
+    After implementing T5 and Unieval prompt in data.prompt remove this class
+    """
     def __init__(self, split: str, files: list[str], tokenizer: AutoTokenizer, do_tokenize: bool = True, do_prompt: bool = True) -> None:
         super().__init__()
         self.split = split
@@ -215,18 +176,18 @@ class ZeroShotDataset(Dataset):
         #     res_dict = dict(input_text=list(input_text), label=list(label), ref_list=list(ref_list), group=list(group))
         #     return res_dict
         
-        def prompt_function(examples, indices):
-            # T5-MNLI (intent)
-            input_text, label, ref_list, group = zip(*[
-                ['hypothesis: {} {} {} question: {} {} answer: {}'.format(
-                    'The answer to the question is similar to:', convert_exemple(ref), self.tokenizer.eos_token,
-                    question, self.tokenizer.eos_token, target
-                ), label, ref_list, i]
-                for i, question, target, ref_list, label in zip(indices, examples['question'], examples['answer'], examples['possible_intents'], examples['label'])
-                for ref in ref_list
-            ])
-            res_dict = dict(input_text=list(input_text), label=list(label), ref_list=list(ref_list), group=list(group))
-            return res_dict
+        # def prompt_function(examples, indices):
+        #     # T5-MNLI (intent)
+        #     input_text, label, ref_list, group = zip(*[
+        #         ['hypothesis: {} {} {} question: {} {} answer: {}'.format(
+        #             'The answer to the question is similar to:', convert_exemple(ref), self.tokenizer.eos_token,
+        #             question, self.tokenizer.eos_token, target
+        #         ), label, ref_list, i]
+        #         for i, question, target, ref_list, label in zip(indices, examples['question'], examples['answer'], examples['possible_intents'], examples['label'])
+        #         for ref in ref_list
+        #     ])
+        #     res_dict = dict(input_text=list(input_text), label=list(label), ref_list=list(ref_list), group=list(group))
+        #     return res_dict
         
         
         # def prompt_function(examples, indices):
@@ -289,7 +250,7 @@ class ZeroShotDataset(Dataset):
         #     # BART-MNLI (intent)
         #     input_text, label, ref_list, group = zip(*[
         #         ['{} {} {} question: {} answer: {}'.format(
-        #             'The answer to the question is similar to:', convert_exemple(ref), self.tokenizer.sep_token,
+        #             'The answer to the question is similar to:', convert_exemple(ref), self.tokenizer.sep_token+self.tokenizer.sep_token,
         #             question, target
         #         ), label, ref_list, i]
         #         for i, question, target, ref_list, label in zip(indices, examples['question'], examples['answer'], examples['possible_intents'], examples['label'])
@@ -311,18 +272,18 @@ class ZeroShotDataset(Dataset):
         #     res_dict = dict(input_text=list(input_text), label=list(label), ref_list=list(ref_list), group=list(group))
         #     return res_dict
 
-        # def prompt_function(examples, indices):
-        #     # BART-MNLI (sentiment)
-        #     input_text, label, ref_list, group = zip(*[
-        #         ['The answer to the question expresses {} {} question: {} answer: {}'.format(
-        #             convert_exemple(ref), self.tokenizer.sep_token,
-        #             question, target
-        #         ), label, ref_list, i]
-        #         for i, question, target, ref_list, label in zip(indices, examples['question'], examples['answer'], examples['possible_intents'], examples['label'])
-        #         for ref in ref_list
-        #     ])
-        #     res_dict = dict(input_text=list(input_text), label=list(label), ref_list=list(ref_list), group=list(group))
-        #     return res_dict
+        def prompt_function(examples, indices):
+            # BART-MNLI (sentiment)
+            input_text, label, ref_list, group = zip(*[
+                ['The answer to the question expresses {} {} question: {} answer: {}'.format(
+                    convert_exemple(ref), self.tokenizer.sep_token,
+                    question, target
+                ), label, ref_list, i]
+                for i, question, target, ref_list, label in zip(indices, examples['question'], examples['answer'], examples['possible_intents'], examples['label'])
+                for ref in ref_list
+            ])
+            res_dict = dict(input_text=list(input_text), label=list(label), ref_list=list(ref_list), group=list(group))
+            return res_dict
         
         self.data = self.data.map(
             prompt_function, with_indices=True, batched=True, load_from_cache_file=False,

@@ -1,28 +1,42 @@
-class PaddingCollator():
+import torch
+
+
+class TokenizeAndPad():
 
     def __init__(self, tokenizer) -> None:
         self.tokenizer = tokenizer
     
-    def __call__(self, inputs_list: list) -> dict:
-        pad_inputs = self.tokenizer.pad(inputs_list, return_tensors='pt')
-        inputs_dict = dict(input_ids=pad_inputs['input_ids'], attention_mask=pad_inputs['attention_mask'], label=pad_inputs['label'])
-        return inputs_dict
-    
-
-class ZeroShotPaddingCollator():
-
-    def __init__(self, tokenizer, metadata_col: list[str] = []) -> None:
-        self.tokenizer = tokenizer
-        self.metadata_col = metadata_col
-    
-    def __call__(self, inputs_list: list) -> dict:
+    def __call__(self, inputs_list: list) -> dict[torch.Tensor]:
         """
-        Pad the inputs and retrieve metadata in a separate dictionary
+        Tokenize and pad the inputs
         """
-        metadata_dict = {k: [x.pop(k) for x in inputs_list] for k in self.metadata_col}
-        
-        pad_inputs = self.tokenizer.pad(inputs_list, return_tensors='pt')
-        inputs_dict = dict(input_ids=pad_inputs['input_ids'], attention_mask=pad_inputs['attention_mask'], label=pad_inputs['label'])
-        
-        res_dict = dict(inputs=inputs_dict, metadata=metadata_dict)
-        return res_dict
+        input_text = [x['input_text'] for x in inputs_list]
+        inputs = self.tokenizer(input_text, return_tensors='pt', padding=True, truncation=True)
+
+        labels = torch.as_tensor([x['label'] for x in inputs_list])
+
+        return dict(
+            **inputs,
+            label=labels
+        )
+
+
+class ZeroCollator(TokenizeAndPad):
+
+    def __init__(self, tokenizer, metadata_columns: list[str] = None) -> None:
+        super().__init__(tokenizer=tokenizer)
+        self.metadata_columns = metadata_columns if metadata_columns is not None else []
+    
+    def __call__(self, inputs_list: list) -> dict[torch.Tensor]:
+        """
+        Deal with metadata separately. Then Tokenize and Pad inputs.
+        """
+        # Extract metadata
+        metadata_dict = {k: [x.pop(k) for x in inputs_list] for k in self.metadata_columns}
+        # Tokenize and Pad inputs
+        inputs_dict = super().__call__(inputs_list=inputs_list)
+
+        return dict(
+            inputs=inputs_dict,
+            metadata=metadata_dict
+        )
