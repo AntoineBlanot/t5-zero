@@ -19,7 +19,7 @@ config = dict(
             name='bert-base-uncased',
             n_class=3
         ),
-        save_path=Path('exp/bert-base-mnli/model-step-24000.pt'),
+        save_path=Path('exp/bert-base-mnli/model-step-33000.pt'),
         true_id=0,
         false_id=2
     ),
