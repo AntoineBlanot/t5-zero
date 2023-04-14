@@ -91,7 +91,7 @@ class MultiClassZeroShot(nn.Module):
         labels = torch.split(labels, group_count)
         labels = [x[0].item() for x in labels]
 
-        print([(l, p, x) for l, p, x in zip(labels, predictions, probs)])
+        # print([(l, p, x) for l, p, x in zip(labels, predictions, probs)])
         print(confusion_matrix(y_true=labels, y_pred=predictions))
 
         acc = accuracy_metric.compute(predictions=predictions, references=labels)
@@ -138,7 +138,7 @@ class SingleClassZeroShot(nn.Module):
         labels = torch.split(labels, group_count)
         labels = [x[0].item() for x in labels]
 
-        print([(l, p, x) for l, p, x in zip(labels, predictions, probs)])
+        # print([(l, p, x) for l, p, x in zip(labels, predictions, probs)])
         print(confusion_matrix(y_true=labels, y_pred=predictions))
 
         acc = accuracy_metric.compute(predictions=predictions, references=labels)
