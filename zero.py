@@ -8,12 +8,10 @@ from tqdm import tqdm
 class ZeroShotPredictor():
 
     def __init__(self,
-        model: nn.Module, data_loader: DataLoader, device: str = 'cpu', compute_metrics: callable = None
+        model: nn.Module, data_loader: DataLoader, device: str = 'cpu'
     ) -> None:
         self.model = model.to(device)
         self.data_loader = data_loader
-        self.compute_metrics = compute_metrics
-
         self.device = device
     
     def predict(self) -> dict:
@@ -33,8 +31,9 @@ class ZeroShotPredictor():
                 labels = inputs.pop('label')
 
                 outputs = self.model(**inputs)
+                logits = outputs['logits']
 
-                all_outputs.append(outputs['head_outputs'].detach().cpu())
+                all_outputs.append(logits.detach().cpu())
                 all_labels.append(labels.cpu())
                 all_metadata.append(metadata)
 
@@ -44,10 +43,7 @@ class ZeroShotPredictor():
 
         res_dict = {**outputs_dict, **metadata_dict}
 
-        if self.compute_metrics is not None:
-            metrics = self.compute_metrics(res_dict)
-        else:
-            metrics = {}
+        metrics = self.model.compute_metrics(res_dict)
 
         return metrics
 

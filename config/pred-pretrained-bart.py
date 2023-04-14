@@ -9,21 +9,19 @@ import data.preprocess as preprocesses
 
 
 config = dict(
-    name='pred-bart',
+    name='pred-pretrained-bart',
     model_cfg=dict(
         cls=zero.MultiClassZeroShot,
         module_cfg=dict(
-            cls=models.BARTClassif,
-            name='facebook/bart-large',
-            id2label={'0': 'entaillment', '1': 'neutral', '2': 'contradiction'}
+            cls=models.PretrainedBARTClassif,
+            name='facebook/bart-large-mnli'
         ),
-        save_path=Path('exp/bart-large-mnli-sched/model-step-28000.pt'),
-        true_id=0,
-        false_id=2
+        true_id=2,
+        false_id=0
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='facebook/bart-large',
+        pretrained_model_name_or_path='facebook/bart-large-mnli',
         model_max_length=512
     ),
     data_cfg=dict(
