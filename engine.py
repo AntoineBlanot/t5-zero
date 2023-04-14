@@ -65,8 +65,9 @@ class Engine():
                 self.optimizer.zero_grad()
 
                 outputs = self.model(**inputs)
+                logits = outputs['logits']
 
-                train_loss = self.criterion(outputs['head_outputs'], labels)
+                train_loss = self.criterion(logits, labels)
                 train_loss.backward()
 
                 self.optimizer.step()
@@ -123,12 +124,13 @@ class Engine():
                 labels = inputs.pop('label')
                 
                 outputs = self.model(**inputs)
+                logits = outputs['logits']
 
-                eval_loss = self.criterion(outputs['head_outputs'], labels)
+                eval_loss = self.criterion(logits, labels)
 
-                all_eval_outputs.append(outputs['head_outputs'].detach())
-                all_eval_labels.append(labels)
-                all_eval_loss.append(eval_loss.detach())
+                all_eval_outputs.append(logits.detach().cpu())
+                all_eval_labels.append(labels.cpu())
+                all_eval_loss.append(eval_loss.detach().cpu())
 
         eval_dict = dict(outputs=all_eval_outputs, labels=all_eval_labels, loss=all_eval_loss)
         eval_dict = {k: torch.cat(v) if v[0].dim() > 0 else torch.stack(v) for k,v in eval_dict.items()}
