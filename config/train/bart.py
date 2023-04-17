@@ -9,23 +9,23 @@ import data.dataset as datasets
 import data.preprocess as preprocesses
 import data.prompt as prompts
 
-NAME = 'roberta-base-mnli'
+NAME = 'bart-base-mnli'
 
 config = dict(
     name=NAME,
     model_cfg=dict(
-        cls=models.RoBertaClassif,
-        name='roberta-base',
+        cls=models.BERTClassif,
+        name='facebook/bart-base-mnli',
         n_class=3
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='roberta-base',
+        pretrained_model_name_or_path='facebook/bart-base-mnli',
         model_max_length=128
     ),
     data_cfg=dict(
         cls=datasets.MNLIDataset,
-        prompt=prompts.BERTNLIPrompt(),
+        prompt=prompts.BARTNLIPrompt(),
         to_binary=False
     ),
     collator_cfg=dict(
