@@ -1,3 +1,3 @@
-CONFIG_FILE='bert-base-mnli-train'
+CONFIG_FILE='train.bert'
 
 python train.py --config_file $CONFIG_FILE

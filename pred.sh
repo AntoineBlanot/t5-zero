@@ -1,3 +1,3 @@
-CONFIG_FILE='pred'
+CONFIG_FILE='pred.bert'
 
 python predict.py --config_file $CONFIG_FILE
