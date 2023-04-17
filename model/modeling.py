@@ -1,9 +1,13 @@
 import torch
 from torch import Tensor, nn
-from transformers import AutoConfig, BartConfig, BartForSequenceClassification, AutoModelForSeq2SeqLM, BertForSequenceClassification, RobertaForSequenceClassification
+from transformers import (
+    AutoConfig, AutoModelForSeq2SeqLM, 
+    BertForSequenceClassification, RobertaForSequenceClassification, BartForSequenceClassification
+)
 
-from model.encoder import T5Encoder, BertEncoder, RoBertaEncoder
+from model.encoder import T5Encoder
 from model.pooling import Pooling
+from model.head import ClassificationHead
 
 
 class PretrainedBARTClassif(nn.Module):
@@ -36,7 +40,7 @@ class PretrainedUniEvalClassif(nn.Module):
             logits=outputs.logits[:, -1, :],        # last element of sequence
             hidden_states=outputs.decoder_hidden_states
         )
-    
+
 
 class T5Classif(nn.Module):
 
@@ -44,7 +48,11 @@ class T5Classif(nn.Module):
         super().__init__(*args, **kwargs)
         self.encoder = T5Encoder(name=name)
         self.pool_layer = Pooling(self.encoder.module.config.d_model, pooling_mode_mean_tokens=True)
-        self.head = nn.Linear(self.encoder.module.config.d_model, n_class)
+        self.head = ClassificationHead(
+            hidden_size=self.encoder.module.config.d_model,
+            out_size=n_class,
+            dropout=self.encoder.module.config.dropout_rate
+        )
 
     def forward(self, *args, **kwargs) -> dict:
         # Encoder
@@ -59,26 +67,6 @@ class T5Classif(nn.Module):
             logits=head_outputs,
             hidden_states=encoder_outputs
         )
-    
-
-# class BERTClassif(nn.Module):
-
-#     def __init__(self, name: str, n_class: int, *args, **kwargs) -> None:
-#         super().__init__(*args, **kwargs)
-#         self.encoder = BertEncoder(name=name)
-#         self.head = nn.Linear(self.encoder.module.config.hidden_size, n_class)
-
-#     def forward(self, *args, **kwargs) -> dict:
-#         # Encoder
-#         encoder_outputs = self.encoder(*args, **kwargs)
-#         # Poolinng embeddings ([CLS] token)
-#         pooled_outputs = encoder_outputs[:, 0, :]
-#         head_outputs = self.head(pooled_outputs)
-
-#         return dict(
-#             logits=head_outputs,
-#             hidden_states=encoder_outputs
-#         )
 
 
 class BERTClassif(nn.Module):
@@ -109,26 +97,6 @@ class BERTClassif(nn.Module):
             logits=outputs.logits,
             hidden_states=outputs.hidden_states
         )
-    
-
-class BinaryBERTClassif(nn.Module):
-
-    def __init__(self, name: str, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.encoder = BertEncoder(name=name)
-        self.head = nn.Linear(self.encoder.module.config.d_model, 1)
-
-    def forward(self, *args, **kwargs) -> dict:
-        # Encoder
-        encoder_outputs = self.encoder(*args, **kwargs)
-        # Poolinng embeddings ([CLS] token)
-        pooled_outputs = encoder_outputs[:, 0, :]
-        head_outputs = self.head(pooled_outputs)
-
-        return dict(
-            logits=head_outputs,
-            hidden_states=encoder_outputs
-        )
 
 
 class RoBertaClassif(nn.Module):
@@ -138,8 +106,8 @@ class RoBertaClassif(nn.Module):
         config = AutoConfig.from_pretrained(name)
         self.__update_config(base_config=config, n_class=n_class)
 
-        BertForSequenceClassification._keys_to_ignore_on_load_unexpected = ["cls.*"]
-        self.model = RobertaForSequenceClassification.from_pretrained(name)
+        RobertaForSequenceClassification._keys_to_ignore_on_load_unexpected = ["lm_head.*"]
+        self.model = RobertaForSequenceClassification.from_pretrained(name, config=config)
 
     def __update_config(self, base_config, n_class):
         num_labels = n_class
@@ -163,16 +131,28 @@ class RoBertaClassif(nn.Module):
 
 class BARTClassif(nn.Module):
 
-    def __init__(self, name: str, id2label: dict, *args, **kwargs) -> None:
+    def __init__(self, name: str, n_class: int, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        label2id = {v: int(k) for k,v in id2label.items()}
-        config = BartConfig(id2label=id2label, label2id=label2id, num_labels=len(id2label))
-        self.encoder_decoder = BartForSequenceClassification.from_pretrained(name, config=config)
+        config = AutoConfig.from_pretrained(name)
+        self.__update_config(base_config=config, n_class=n_class)
 
-    def forward(self, *args, **kwargs):
-        outputs = self.encoder_decoder(*args, **kwargs)
+        self.model = BartForSequenceClassification.from_pretrained(name, config=config)
+    
+    def __update_config(self, base_config, n_class):
+        num_labels = n_class
+        label2id = { 'entailment': 0, 'neutral': 1, 'contradiction': 2}
+        id2label = {v: k for k,v in label2id.items()}
         
+        base_config.update(dict(
+            num_labels=num_labels,
+            label2id=label2id,
+            id2label=id2label
+        ))
+
+    def forward(self, *args, **kwargs) -> dict:
+        outputs = self.model(*args, **kwargs)
+
         return dict(
             logits=outputs.logits,
-            hidden_states=outputs.decoder_hidden_states
+            hidden_states=outputs.hidden_states
         )
