@@ -64,7 +64,7 @@ class MNLIDataset(Dataset):
     
     def __convert_to_binary(self) -> None:
         self.data = self.data.map(
-            lambda examples: examples.update({'label': [1 if x == 0 else 0 for x in examples['label']]}),
+            lambda examples: {**examples, **{'label': [0.0 if x > 0 else 1.0 for x in examples['label']]}},
             batched=True, load_from_cache_file=False,
             desc='Convert `{}` dataset ({} split) to binary'.format(self.data_name, self.split)
         ).cast_column('label', Value('float32'))
