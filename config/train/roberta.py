@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 
-from transformers import AutoTokenizer, get_polynomial_decay_schedule_with_warmup
+from transformers import AutoTokenizer
 
 import model.modeling as models
 import data.dataset as datasets
