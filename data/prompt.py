@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 class BasePromptClass():
     """
     Base `PromptClass`
@@ -5,7 +7,7 @@ class BasePromptClass():
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -42,7 +44,7 @@ class BERTNLIPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -70,7 +72,7 @@ class BERTZeroIntentPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -107,7 +109,7 @@ class BERTZeroYesNoPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -144,7 +146,7 @@ class BERTZeroSentimentPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -182,7 +184,7 @@ class BARTNLIPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -210,7 +212,7 @@ class BARTZeroIntentPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -247,7 +249,7 @@ class BARTZeroYesNoPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -284,7 +286,7 @@ class BARTZeroSentimentPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -322,7 +324,7 @@ class T5NLIPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -352,7 +354,7 @@ class T5ZeroIntentPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
     
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -390,7 +392,7 @@ class T5ZeroYesNoPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
     
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -427,7 +429,7 @@ class T5ZeroSentimentPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
     
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -465,7 +467,7 @@ class UniEvalNLIPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -495,7 +497,7 @@ class UniEvalZeroIntentPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
     
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -532,7 +534,7 @@ class UniEvalZeroYesNoPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
     
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:
@@ -569,7 +571,7 @@ class UniEvalZeroSentimentPrompt(BasePromptClass):
     def __init__(self) -> None:
         pass
     
-    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+    def prompt(self, examples: Dict[str, List], indices, tokenizer = None) -> Dict[str, List]:
         """
         Build prompts.
         Args:

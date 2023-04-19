@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 import torch
 from torch.utils.data import Dataset
 
@@ -81,7 +83,7 @@ class MNLIDataset(Dataset):
 
 class ZeroDataset(Dataset):
 
-    def __init__(self, split: str, files: list[str], tokenizer: AutoTokenizer = None, prompt: BasePromptClass = None) -> None:
+    def __init__(self, split: str, files: List[str], tokenizer: AutoTokenizer = None, prompt: BasePromptClass = None) -> None:
         super().__init__()
         self.data_name = files
         self.split = split

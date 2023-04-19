@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 import torch
 
 
@@ -6,7 +8,7 @@ class TokenizeAndPad():
     def __init__(self, tokenizer) -> None:
         self.tokenizer = tokenizer
     
-    def __call__(self, inputs_list: list) -> dict[torch.Tensor]:
+    def __call__(self, inputs_list: List) -> Dict[str, torch.Tensor]:
         """
         Tokenize and pad the inputs
         """
@@ -28,7 +30,7 @@ class BARTTokenizeAndPad():
     def __init__(self, tokenizer) -> None:
         self.tokenizer = tokenizer
     
-    def __call__(self, inputs_list: list) -> dict[torch.Tensor]:
+    def __call__(self, inputs_list: List) -> Dict[str, torch.Tensor]:
         """
         Tokenize and pad the inputs
         """
@@ -46,11 +48,11 @@ class BARTTokenizeAndPad():
 
 class ZeroCollator(TokenizeAndPad):
 
-    def __init__(self, tokenizer, metadata_columns: list[str] = None) -> None:
+    def __init__(self, tokenizer, metadata_columns: List[str] = None) -> None:
         super().__init__(tokenizer=tokenizer)
         self.metadata_columns = metadata_columns if metadata_columns is not None else []
     
-    def __call__(self, inputs_list: list) -> dict[torch.Tensor]:
+    def __call__(self, inputs_list: List) -> Dict[str, torch.Tensor]:
         """
         Deal with metadata separately. Then Tokenize and Pad inputs.
         """
