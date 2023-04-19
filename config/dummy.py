@@ -1,34 +1,39 @@
-from torch.nn import CrossEntropyLoss
-from transformers import Adafactor, AutoTokenizer
+import torch.nn as nn
+import torch.optim as optim
+import torch.optim.lr_scheduler as lr_scheduler
 
-from model.modeling import T5Classification
-from data.dataset import DummyDataset
-from data.preprocess import PaddingCollator
+from transformers import AutoTokenizer, Adafactor, DataCollatorForSeq2Seq
+
+import model.modeling as models
+import data.dataset as datasets
+import data.preprocess as preprocesses
+
+NAME = 'test'
 
 
 config = dict(
-    name='t5-1',
+    name=NAME,
     model_cfg=dict(
-        cls=T5Classification,
-        name='t5-base',
+        cls=models.T5Classif,
+        name='t5-large',
         n_class=3
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='t5-base',
+        pretrained_model_name_or_path='t5-large',
         model_max_length=200
     ),
     data_cfg=dict(
-        cls=DummyDataset,
+        cls=datasets.DummyDataset,
         n=100,
         l=200
     ),
     collator_cfg=dict(
-        cls=PaddingCollator
+        cls=DataCollatorForSeq2Seq
     ),
-    train_cfg=dict(
+    engine_cfg=dict(
         criterion=dict(
-            cls=CrossEntropyLoss
+            cls=nn.CrossEntropyLoss
         ),
         optimizer=dict(
             cls=Adafactor,
@@ -37,7 +42,12 @@ config = dict(
             warmup_init=False,
             lr=1e-3
         ),
-        output_dir='test',
+        scheduler=dict(
+            cls=lr_scheduler.StepLR,
+            step_size=12272,
+            gamma=0.1
+        ),
+        output_dir=NAME,
         train_batch_size=32,
         eval_batch_size=32,
         device='cuda',
