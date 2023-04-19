@@ -9,18 +9,18 @@ import data.dataset as datasets
 import data.preprocess as preprocesses
 import data.prompt as prompts
 
-NAME = 'roberta-large-mnli'
+NAME = 'roberta-base-test'
 
 config = dict(
     name=NAME,
     model_cfg=dict(
         cls=models.RoBertaClassif,
-        name='roberta-large',
+        name='roberta-base',
         n_class=3
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='roberta-large',
+        pretrained_model_name_or_path='roberta-base',
         model_max_length=128
     ),
     data_cfg=dict(
@@ -46,6 +46,8 @@ config = dict(
         output_dir=f'exp/{NAME}',
         train_batch_size=32,
         eval_batch_size=32,
+        grad_acc=1,
+        fp16=False,
         device='cuda',
         max_train_steps=12387*3,
         eval_steps=1000,
