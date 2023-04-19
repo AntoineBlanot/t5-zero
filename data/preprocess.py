@@ -12,7 +12,7 @@ class TokenizeAndPad():
         """
         input_text = [x['input_text'] for x in inputs_list]
         inputs = self.tokenizer(input_text, return_tensors='pt', padding=True, truncation=True)
-
+        
         labels = torch.as_tensor([x['label'] for x in inputs_list])
 
         return dict(
@@ -20,6 +20,29 @@ class TokenizeAndPad():
             label=labels
         )
 
+
+class BARTTokenizeAndPad():
+    """
+    Data Collator for BART. BART is special because it each example in the batch needs to have the same number of eos token (because of truncation we have to be careful)
+    """
+    def __init__(self, tokenizer) -> None:
+        self.tokenizer = tokenizer
+    
+    def __call__(self, inputs_list: list) -> dict[torch.Tensor]:
+        """
+        Tokenize and pad the inputs
+        """
+        input_text = [x['input_text'] for x in inputs_list]
+        a, b = zip(*[[x for x in t.split(self.tokenizer.eos_token) if x != ''] for t in input_text])
+        inputs = self.tokenizer(list(a), list(b), return_tensors='pt', padding=True, truncation='only_first')
+
+        labels = torch.as_tensor([x['label'] for x in inputs_list])
+
+        return dict(
+            **inputs,
+            label=labels
+        )
+    
 
 class ZeroCollator(TokenizeAndPad):
 

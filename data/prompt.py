@@ -46,7 +46,7 @@ class BERTNLIPrompt(BasePromptClass):
     
 class BERTZeroIntentPrompt(BasePromptClass):
     """
-    Prompts for Bert-based models for `intent recognition` task
+    Prompts for Bert-based models for `Intent Recognition` task
     """
     def __init__(self) -> None:
         pass
@@ -120,7 +120,7 @@ class BERTZeroYesNoPrompt(BasePromptClass):
 
 class BERTZeroSentimentPrompt(BasePromptClass):
     """
-    Prompts for Bert-based models for `Yes/No QA` task
+    Prompts for Bert-based models for `Sentiment Analysis` task
     """
     def __init__(self) -> None:
         pass
@@ -186,7 +186,7 @@ class BARTNLIPrompt(BasePromptClass):
     
 class BARTZeroIntentPrompt(BasePromptClass):
     """
-    Prompts for Bert-based models for `intent recognition` task
+    Prompts for Bert-based models for `Intent Recognition` task
     """
     def __init__(self) -> None:
         pass
@@ -260,7 +260,7 @@ class BARTZeroYesNoPrompt(BasePromptClass):
 
 class BARTZeroSentimentPrompt(BasePromptClass):
     """
-    Prompts for Bert-based models for `Yes/No QA` task
+    Prompts for Bert-based models for `Sentiment Analysis` task
     """
     def __init__(self) -> None:
         pass
@@ -325,6 +325,260 @@ class T5NLIPrompt(BasePromptClass):
         examples['input_text'] = prompt_list
         
         return examples
+
+class T5ZeroIntentPrompt(BasePromptClass):
+    """
+    Prompts for T5-based models for `Intent Recognition` task
+    """
+    def __init__(self) -> None:
+        pass
+    
+    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+        """
+        Build prompts.
+        Args:
+            - examples: list of data, each data is a dictionnary with keys `premise` and `hypothesis`
+        Returns:
+            - enhanced list of data
+        """
+        bot_question_list = examples['question']
+        user_answer_list = examples['answer']
+        possible_intents_list = examples['possible_intents']
+        label_list = examples['label']
+
+        prompt_list, label, ref_list, group = zip(*[
+            ['hypothesis: The answer to the question is similar to the claim. {} question: {} {} answer: {} {} claim: {}'.format(
+                tokenizer.eos_token,
+                question, tokenizer.eos_token,
+                target, tokenizer.eos_token,
+                convert_exemple(ref)
+            ), label, ref_list, i]
+            for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
+            for ref in ref_list
+        ])
+
+        return dict(
+            input_text=list(prompt_list),
+            label=list(label),
+            ref_list=list(ref_list),
+            group=list(group)
+        )
+
+class T5ZeroYesNoPrompt(BasePromptClass):
+    """
+    Prompts for T5-based models for `Yes/No QA` task
+    """
+    def __init__(self) -> None:
+        pass
+    
+    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+        """
+        Build prompts.
+        Args:
+            - examples: list of data, each data is a dictionnary with keys `premise` and `hypothesis`
+        Returns:
+            - enhanced list of data
+        """
+        bot_question_list = examples['question']
+        user_answer_list = examples['answer']
+        possible_intents_list = examples['possible_intents']
+        label_list = examples['label']
+
+        prompt_list, label, ref_list, group = zip(*[
+            ['hypothesis: The answer is {} to the question. {} question: {} {} answer: {}'.format(
+                convert_exemple(ref), tokenizer.eos_token,
+                question, tokenizer.eos_token,
+                target
+            ), label, ref_list, i]
+            for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
+            for ref in ref_list
+        ])
+
+        return dict(
+            input_text=list(prompt_list),
+            label=list(label),
+            ref_list=list(ref_list),
+            group=list(group)
+        )
+
+class T5ZeroSentimentPrompt(BasePromptClass):
+    """
+    Prompts for T5-based models for `Sentiment Analysis` task
+    """
+    def __init__(self) -> None:
+        pass
+    
+    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+        """
+        Build prompts.
+        Args:
+            - examples: list of data, each data is a dictionnary with keys `premise` and `hypothesis`
+        Returns:
+            - enhanced list of data
+        """
+        bot_question_list = examples['question']
+        user_answer_list = examples['answer']
+        possible_intents_list = examples['possible_intents']
+        label_list = examples['label']
+
+        prompt_list, label, ref_list, group = zip(*[
+            ['hypothesis: The answer to the question expresses {}. {} question: {} {} answer: {}'.format(
+                convert_exemple(ref), tokenizer.eos_token,
+                question, tokenizer.eos_token,
+                target
+            ), label, ref_list, i]
+            for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
+            for ref in ref_list
+        ])
+
+        return dict(
+            input_text=list(prompt_list),
+            label=list(label),
+            ref_list=list(ref_list),
+            group=list(group)
+        )
+
+
+class UniEvalNLIPrompt(BasePromptClass):
+    """
+    Prompts for UniEval models for `NLI` task
+    """
+    def __init__(self) -> None:
+        pass
+
+    def prompt(self, examples: dict[list], tokenizer = None) -> dict[list]:
+        """
+        Build prompts.
+        Args:
+            - examples: list of data, each data is a dictionnary with keys `premise` and `hypothesis`
+        Returns:
+            - enhanced list of data
+        """
+        premise_list = examples['premise']
+        hypothesis_list = examples['hypothesis']
+
+        prompt_list = [
+            'question: Is this a claim consistent with the premise? {} claim: {} {} premise: {}'.format(
+                tokenizer.eos_token,
+                hypothesis, tokenizer.eos_token,
+                premise
+            )
+            for premise, hypothesis in zip(premise_list, hypothesis_list) 
+        ]
+        examples['input_text'] = prompt_list
+        
+        return examples
+
+class UniEvalZeroIntentPrompt(BasePromptClass):
+    """
+    Prompts for UniEval models for `Intent Recognition` task
+    """
+    def __init__(self) -> None:
+        pass
+    
+    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+        """
+        Build prompts.
+        Args:
+            - examples: list of data, each data is a dictionnary with keys `premise` and `hypothesis`
+        Returns:
+            - enhanced list of data
+        """
+        bot_question_list = examples['question']
+        user_answer_list = examples['answer']
+        possible_intents_list = examples['possible_intents']
+        label_list = examples['label']
+
+        prompt_list, label, ref_list, group = zip(*[
+            ['question: Is this a claim consistent with the premise? {} claim: {} {} premise: {}'.format(
+                tokenizer.eos_token,
+                target, tokenizer.eos_token,
+                convert_exemple(ref)
+            ), label, ref_list, i]
+            for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
+            for ref in ref_list
+        ])
+
+        return dict(
+            input_text=list(prompt_list),
+            label=list(label),
+            ref_list=list(ref_list),
+            group=list(group)
+        )
+
+class UniEvalZeroYesNoPrompt(BasePromptClass):
+    """
+    Prompts for UniEval models for `Yes/No QA` task
+    """
+    def __init__(self) -> None:
+        pass
+    
+    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+        """
+        Build prompts.
+        Args:
+            - examples: list of data, each data is a dictionnary with keys `premise` and `hypothesis`
+        Returns:
+            - enhanced list of data
+        """
+        bot_question_list = examples['question']
+        user_answer_list = examples['answer']
+        possible_intents_list = examples['possible_intents']
+        label_list = examples['label']
+
+        prompt_list, label, ref_list, group = zip(*[
+            ['question: Is the answer {} to the interrogation? {} interrogation: {} {} answer: {}'.format(
+                convert_exemple(ref), tokenizer.eos_token,
+                question, tokenizer.eos_token,
+                target
+            ), label, ref_list, i]
+            for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
+            for ref in ref_list
+        ])
+
+        return dict(
+            input_text=list(prompt_list),
+            label=list(label),
+            ref_list=list(ref_list),
+            group=list(group)
+        )
+
+class UniEvalZeroSentimentPrompt(BasePromptClass):
+    """
+    Prompts for UniEval models for `Sentiment Analysis` task
+    """
+    def __init__(self) -> None:
+        pass
+    
+    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
+        """
+        Build prompts.
+        Args:
+            - examples: list of data, each data is a dictionnary with keys `premise` and `hypothesis`
+        Returns:
+            - enhanced list of data
+        """
+        bot_question_list = examples['question']
+        user_answer_list = examples['answer']
+        possible_intents_list = examples['possible_intents']
+        label_list = examples['label']
+
+        prompt_list, label, ref_list, group = zip(*[
+            ['question: Does the answer to the interrogation expresses {}? {} interrogation: {} {} answer: {}'.format(
+                convert_exemple(ref), tokenizer.eos_token,
+                question, tokenizer.eos_token,
+                target
+            ), label, ref_list, i]
+            for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
+            for ref in ref_list
+        ])
+
+        return dict(
+            input_text=list(prompt_list),
+            label=list(label),
+            ref_list=list(ref_list),
+            group=list(group)
+        )
 
 
 def convert_exemple(name: str) -> str:
