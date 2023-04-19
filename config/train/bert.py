@@ -9,18 +9,18 @@ import data.dataset as datasets
 import data.preprocess as preprocesses
 import data.prompt as prompts
 
-NAME = 'bert-base-mnli'
+NAME = 'bert-large-mnli'
 
 config = dict(
     name=NAME,
     model_cfg=dict(
         cls=models.BERTClassif,
-        name='bert-base-uncased',
+        name='bert-large-uncased',
         n_class=3
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='bert-base-uncased',
+        pretrained_model_name_or_path='bert-large-uncased',
         model_max_length=128
     ),
     data_cfg=dict(
@@ -41,13 +41,13 @@ config = dict(
         ),
         scheduler=dict(
             cls=lr_scheduler.LambdaLR,
-            lr_lambda=lambda epoch: 1,
+            lr_lambda=lambda epoch: 1
         ),
         output_dir=f'exp/{NAME}',
         train_batch_size=32,
         eval_batch_size=32,
         device='cuda',
-        max_train_steps=12272*3,
+        max_train_steps=12387*3,
         eval_steps=1000,
         save_steps=1000,
         log_steps=1000,
