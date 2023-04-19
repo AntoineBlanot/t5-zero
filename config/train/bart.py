@@ -9,18 +9,18 @@ import data.dataset as datasets
 import data.preprocess as preprocesses
 import data.prompt as prompts
 
-NAME = 'bart-base-mnli'
+NAME = 'bart-large-mnli'
 
 config = dict(
     name=NAME,
     model_cfg=dict(
-        cls=models.BERTClassif,
-        name='facebook/bart-base-mnli',
+        cls=models.BARTClassif,
+        name='facebook/bart-large',
         n_class=3
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='facebook/bart-base-mnli',
+        pretrained_model_name_or_path='facebook/bart-large',
         model_max_length=128
     ),
     data_cfg=dict(
@@ -29,7 +29,7 @@ config = dict(
         to_binary=False
     ),
     collator_cfg=dict(
-        cls=preprocesses.TokenizeAndPad
+        cls=preprocesses.BARTTokenizeAndPad
     ),
     engine_cfg=dict(
         criterion=dict(
@@ -41,13 +41,13 @@ config = dict(
         ),
         scheduler=dict(
             cls=lr_scheduler.LambdaLR,
-            lr_lambda=lambda epoch: 1,
+            lr_lambda=lambda epoch: 1
         ),
         output_dir=f'exp/{NAME}',
         train_batch_size=32,
         eval_batch_size=32,
         device='cuda',
-        max_train_steps=12272*3,
+        max_train_steps=12387*3,
         eval_steps=1000,
         save_steps=1000,
         log_steps=1000,
