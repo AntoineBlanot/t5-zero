@@ -48,16 +48,16 @@ config = dict(
             gamma=0.1
         ),
         output_dir=f'exp/{NAME}',
-        train_batch_size=8,
-        eval_batch_size=8,
-        device='cpu',
-        max_train_steps=12272*3,
-        eval_steps= 4000,
-        save_steps= 4000,
-        log_steps= 4000,
-        # logger=dict(
-        #     project='t5-zero',
-        #     name=NAME
-        # )
+        train_batch_size=32,
+        eval_batch_size=32,
+        device='cuda',
+        max_train_steps=12387*3,
+        eval_steps=1000,
+        save_steps=1000,
+        log_steps=1000,
+        logger=dict(
+            project='t5-zero',
+            name=NAME
+        )
     )
 )
