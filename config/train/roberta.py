@@ -9,7 +9,7 @@ import data.dataset as datasets
 import data.preprocess as preprocesses
 import data.prompt as prompts
 
-NAME = 'roberta2-large-mnli'
+NAME = 'roberta-large-mnli'
 
 config = dict(
     name=NAME,
