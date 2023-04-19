@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import torch.cuda.amp as amp
 from torch import Tensor, nn, optim
 from torch.utils.data import DataLoader
 
@@ -14,6 +15,7 @@ class Engine():
         train_loader: DataLoader = None, eval_loader: DataLoader = None,
         criterion: nn.Module = None , optimizer: optim = None, scheduler: optim = None, compute_metrics: callable = None,
         output_dir: str = '.', device: str = 'cpu', seed: int = 2023,
+        grad_acc: int = 1, fp16: bool = True,
         max_train_steps: int = None, eval_steps : int = None, save_steps: int = None, log_steps: int = None,
         logger: dict = None
     ) -> None:
@@ -31,6 +33,8 @@ class Engine():
         self.seed = seed
         torch.manual_seed(self.seed)
 
+        self.grad_acc = grad_acc
+        self.fp16 = fp16
 
         default_steps = len(train_loader) if train_loader is not None else 0
         self.max_train_steps = max_train_steps if max_train_steps is not None else default_steps
@@ -47,8 +51,10 @@ class Engine():
         """
         self.model.train()
         train_pbar = tqdm(range(self.max_train_steps), desc='Training')
-        self.train_step = 0
+        self.train_step, global_step = 1, 0
         self.all_train_metrics, self.all_eval_metrics = {}, {}
+
+        scaler = amp.GradScaler()
 
         if self.logger is not None:
             import wandb
@@ -57,51 +63,56 @@ class Engine():
 
         while not self.__should_stop_train():
             for i, inputs in enumerate(self.train_loader):
-                self.train_step += 1
-                train_pbar.update()
+                global_step += 1
                 inputs = {k: v.to(self.device) for k,v in inputs.items()}
                 labels = inputs.pop('label')
+
+                # FP16
+                with torch.autocast(device_type=self.device, dtype=torch.float16, enabled=self.fp16):
+                    outputs = self.model(**inputs)
+                    logits = outputs['logits']
+                    train_loss = self.criterion(logits, labels)
+
+                scaler.scale(train_loss/self.grad_acc).backward()
+
+                # Gradient accumulation
+                if (global_step % self.grad_acc) == 0:
+                    scaler.step(self.optimizer)
+                    scaler.update()
+                    self.scheduler.step()
+                    self.optimizer.zero_grad()
+                    
+                    train_metrics = dict(train_epoch=round(self.train_step/len(self.train_loader), 4), train_loss=train_loss.item(), train_lr=self.scheduler.get_last_lr()[0])
+                    self.all_train_metrics.update({k: self.all_train_metrics.get(k, []) + [v] for k,v in train_metrics.items()})
+                    self.train_step += 1
+                    train_pbar.update()
                 
-                self.optimizer.zero_grad()
+                    if self.__should_eval():
+                        eval_metrics = self.evaluate()
+                        self.all_eval_metrics.update(eval_metrics)
+                        self.model.train()
 
-                outputs = self.model(**inputs)
-                logits = outputs['logits']
+                    if self.__should_log():
+                        log_metrics = {
+                            **{k: np.asarray(v).mean() if k not in ['train_epoch', 'train_lr'] else v[-1] for k,v in self.all_train_metrics.items()},
+                            **self.all_eval_metrics
+                        }
+                        train_pbar.set_postfix(log_metrics)
 
-                train_loss = self.criterion(logits, labels)
-                train_loss.backward()
+                        if self.logger is not None:
+                            wandb.log({
+                                **{'train/step': self.train_step},
+                                **{k.replace('_', '/'): v for k,v in log_metrics.items()}
+                            })
 
-                self.optimizer.step()
-                self.scheduler.step()
+                        self.all_train_metrics = {}      # reset train metrics
 
-                train_metrics = dict(train_epoch=round(self.train_step/len(self.train_loader), 4), train_loss=train_loss.item(), train_lr=self.scheduler.get_last_lr()[0])
-                self.all_train_metrics.update({k: self.all_train_metrics.get(k, []) + [v] for k,v in train_metrics.items()})
+                    if self.__should_save():
+                        save_path = '{}/model-step-{}.pt'.format(self.output_dir, self.train_step)
+                        torch.save(self.model.state_dict(), save_path)
 
-                if self.__should_eval():
-                    eval_metrics = self.evaluate()
-                    self.all_eval_metrics.update(eval_metrics)
-                    self.model.train()
-
-                if self.__should_log():
-                    log_metrics = {
-                        **{k: np.asarray(v).mean() if k not in ['train_epoch', 'train_lr'] else v[-1] for k,v in self.all_train_metrics.items()},
-                        **self.all_eval_metrics
-                    }
-                    train_pbar.set_postfix(log_metrics)
-
-                    if self.logger is not None:
-                        wandb.log({
-                            **{'train/step': self.train_step},
-                            **{k.replace('_', '/'): v for k,v in log_metrics.items()}
-                        })
-
-                    self.all_train_metrics = {}      # reset train metrics
-
-                if self.__should_save():
-                    save_path = '{}/model-step-{}.pt'.format(self.output_dir, self.train_step)
-                    torch.save(self.model.state_dict(), save_path)
-
-                if self.__should_stop_train():
-                    break
+                    if self.__should_stop_train():
+                        break
         
         if self.logger is not None:
             wandb.finish()
@@ -122,11 +133,12 @@ class Engine():
                 eval_pbar.update()
                 inputs = {k: v.to(self.device) for k,v in inputs.items()}
                 labels = inputs.pop('label')
-                
-                outputs = self.model(**inputs)
-                logits = outputs['logits']
 
-                eval_loss = self.criterion(logits, labels)
+                # FP16
+                with torch.autocast(device_type=self.device, dtype=torch.float16, enabled=self.fp16):
+                    outputs = self.model(**inputs)
+                    logits = outputs['logits']
+                    eval_loss = self.criterion(logits, labels)
 
                 all_eval_outputs.append(logits.detach().cpu())
                 all_eval_labels.append(labels.cpu())
@@ -144,7 +156,7 @@ class Engine():
         return eval_metrics
 
     def __should_stop_train(self) -> bool:
-        if self.train_step >= self.max_train_steps:
+        if self.train_step > self.max_train_steps:
             return True
         return False
 
