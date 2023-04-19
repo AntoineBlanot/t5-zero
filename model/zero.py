@@ -66,9 +66,9 @@ class MultiClassZeroShot(nn.Module):
         self.true_id = true_id
         self.false_id = false_id
 
-    def forward(self, input_ids: Tensor, attention_mask: Tensor, **kwargs) -> Tensor:
+    def forward(self, *args, **kwargs) -> Tensor:
         # Model logits
-        logits = self.model(input_ids=input_ids, attention_mask=attention_mask, **kwargs)['logits']
+        logits = self.model(*args, **kwargs)['logits']
         # Outputs (True and False class)
         logits = logits[:, [self.true_id, self.false_id]]
         assert logits.shape[1] == 2
@@ -113,12 +113,12 @@ class SingleClassZeroShot(nn.Module):
         self.model = model
         self.true_id = true_id
 
-    def forward(self, input_ids: Tensor, attention_mask: Tensor, **kwargs) -> Tensor:
+    def forward(self, *args, **kwargs) -> Tensor:
         # Model logits
-        logits = self.model(input_ids=input_ids, attention_mask=attention_mask, **kwargs)['logits']
+        logits = self.model(*args, **kwargs)['logits']
         # Outputs (True class only if the model was originally multiclass)
-        assert not ((logits.shape[1] > 1) and (self.true_id is None)), 'true_id must be defined if the model was originally multiclass'
-        logits = logits[:, [self.true_id]] if self.true_id is not None else logits.unsqueeze(1) # check if works in case of binary
+        assert not ((len(logits.shape) > 1) and (self.true_id is None)), 'true_id must be defined if the model was originally multiclass'
+        logits = logits[:, [self.true_id]] if self.true_id is not None else logits.unsqueeze(1)
 
         return dict(
             logits=logits
