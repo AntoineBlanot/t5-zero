@@ -5,15 +5,34 @@ class BasePromptClass():
     def __init__(self) -> None:
         pass
 
-    def prompt(self, examples: dict[list], tokenizer = None) -> dict[list]:
+    def prompt(self, examples: dict[list], indices, tokenizer = None) -> dict[list]:
         """
         Build prompts.
         Args:
-            - examples: list of data, each data is a dictionnary
+            - examples: list of data, each data is a dictionnary with keys `premise` and `hypothesis`
         Returns:
             - enhanced list of data
         """
-        NotImplementedError()
+        bot_question_list = examples['question']
+        user_answer_list = examples['answer']
+        possible_intents_list = examples['possible_intents']
+        label_list = examples['label']
+
+        prompt_list, label, ref_list, group = zip(*[
+            ['{} {} {} This text is about {}'.format(
+                question, target, tokenizer.sep_token+tokenizer.sep_token,
+                convert_exemple(ref)
+            ), label, ref_list, i]
+            for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
+            for ref in ref_list
+        ])
+
+        return dict(
+            input_text=list(prompt_list),
+            label=list(label),
+            ref_list=list(ref_list),
+            group=list(group)
+        )
 
 
 class BERTNLIPrompt(BasePromptClass):
