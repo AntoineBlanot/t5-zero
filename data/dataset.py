@@ -81,7 +81,7 @@ class MNLIDataset(Dataset):
 
 class ZeroDataset(Dataset):
 
-    def __init__(self, split: str, files: list[str], tokenizer: AutoTokenizer = None, prompt: BasePromptClass = None, to_binary: bool = False) -> None:
+    def __init__(self, split: str, files: list[str], tokenizer: AutoTokenizer = None, prompt: BasePromptClass = None) -> None:
         super().__init__()
         self.data_name = files
         self.split = split
@@ -99,9 +99,6 @@ class ZeroDataset(Dataset):
         print('Data format: \n\t{}'.format(
             '\n\t'.join([f'{k}: {v}' for k,v in self.data[0].items()])
         ))
-
-        if to_binary:
-            self.__convert_to_binary()
     
     def __load_data(self) -> None:
         self.data = load_dataset('json', data_files=self.data_name, split='train')
@@ -113,13 +110,6 @@ class ZeroDataset(Dataset):
             desc='Preparing prompts for `{}` dataset ({} split)'.format(self.data_name, self.split),
             remove_columns=self.data.column_names
         )
-    
-    def __convert_to_binary(self) -> None:
-        self.data = self.data.map(
-            lambda examples: examples.update({'label': [1 if x == 0 else 0 for x in examples['label']]}),
-            batched=True, load_from_cache_file=False,
-            desc='Convert `{}` dataset ({} split) to binary'.format(self.data_name, self.split)
-        ).cast_column('label', Value('float32'))
 
     def __getitem__(self, index) -> dict:
         return self.data[index]
