@@ -102,7 +102,7 @@ class BERTZeroYesNoPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['question: {} answer: {} {} The answer is {} to the question'.format(
+            ['question: {} answer: {} {} The answer to the question is {}'.format(
                 question,
                 target, tokenizer.sep_token,
                 convert_exemple(ref)
@@ -242,7 +242,7 @@ class BARTZeroYesNoPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['question: {} answer: {} {} The answer is {} to the question'.format(
+            ['question: {} answer: {} {} The answer to the question is {}'.format(
                 question,
                 target, tokenizer.sep_token+tokenizer.sep_token,
                 convert_exemple(ref)
@@ -315,7 +315,7 @@ class T5NLIPrompt(BasePromptClass):
         hypothesis_list = examples['hypothesis']
 
         prompt_list = [
-            'hypothesis: The premise entaills the claim. {} premise: {} {} claim: {}'.format(
+            'hypothesis: The premise entaills the claim {} premise: {} {} claim: {}'.format(
                 tokenizer.eos_token,
                 premise, tokenizer.eos_token,
                 hypothesis
@@ -347,7 +347,7 @@ class T5ZeroIntentPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['hypothesis: The answer to the question is similar to the claim. {} question: {} {} answer: {} {} claim: {}'.format(
+            ['hypothesis: The answer to the question is similar to the claim {} question: {} {} answer: {} {} claim: {}'.format(
                 tokenizer.eos_token,
                 question, tokenizer.eos_token,
                 target, tokenizer.eos_token,
@@ -385,7 +385,7 @@ class T5ZeroYesNoPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['hypothesis: The answer is {} to the question. {} question: {} {} answer: {}'.format(
+            ['hypothesis: The answer to the question is {} {} question: {} {} answer: {}'.format(
                 convert_exemple(ref), tokenizer.eos_token,
                 question, tokenizer.eos_token,
                 target
@@ -422,7 +422,7 @@ class T5ZeroSentimentPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['hypothesis: The answer to the question expresses {}. {} question: {} {} answer: {}'.format(
+            ['hypothesis: The answer to the question expresses {} {} question: {} {} answer: {}'.format(
                 convert_exemple(ref), tokenizer.eos_token,
                 question, tokenizer.eos_token,
                 target
@@ -527,7 +527,7 @@ class UniEvalZeroYesNoPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['question: Is the answer {} to the interrogation? {} interrogation: {} {} answer: {}'.format(
+            ['question: Is the answer to the interrogation {}? {} interrogation: {} {} answer: {}'.format(
                 convert_exemple(ref), tokenizer.eos_token,
                 question, tokenizer.eos_token,
                 target
