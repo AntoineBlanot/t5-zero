@@ -23,7 +23,20 @@ class PretrainedBARTClassif(nn.Module):
             logits=outputs.logits,
             hidden_states=outputs.decoder_hidden_states
         )
-    
+
+class PretrainedRobertaClassif(nn.Module):
+
+    def __init__(self, name: str, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.encoder_decoder = RobertaForSequenceClassification.from_pretrained(name)
+
+    def forward(self, *args, **kwargs):
+        outputs = self.encoder_decoder(*args, **kwargs)
+        
+        return dict(
+            logits=outputs.logits,
+            hidden_states=outputs.hidden_states
+        )
 
 class PretrainedUniEvalClassif(nn.Module):
 
@@ -81,7 +94,7 @@ class BERTClassif(nn.Module):
 
     def __update_config(self, base_config, n_class):
         num_labels = n_class
-        label2id = { 'entailment': 0, 'neutral': 1, 'contradiction': 2}
+        label2id = {'entailment': 0, 'neutral': 1, 'contradiction': 2}
         id2label = {v: k for k,v in label2id.items()}
         
         base_config.update(dict(
@@ -111,7 +124,7 @@ class RoBertaClassif(nn.Module):
 
     def __update_config(self, base_config, n_class):
         num_labels = n_class
-        label2id = { 'entailment': 0, 'neutral': 1, 'contradiction': 2}
+        label2id = {'entailment': 0, 'neutral': 1, 'contradiction': 2}
         id2label = {v: k for k,v in label2id.items()}
         
         base_config.update(dict(
@@ -128,6 +141,31 @@ class RoBertaClassif(nn.Module):
             hidden_states=outputs.hidden_states
         )
 
+class RoBertaBinaryClassif(nn.Module):
+
+    def __init__(self, name: str, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        config = AutoConfig.from_pretrained(name)
+        self.__update_config(base_config=config, n_class=1)
+
+        RobertaForSequenceClassification._keys_to_ignore_on_load_unexpected = ["lm_head.*"]
+        self.model = RobertaForSequenceClassification.from_pretrained(name, config=config)
+
+    def __update_config(self, base_config, n_class):
+        num_labels = n_class
+        
+        base_config.update(dict(
+            num_labels=num_labels
+        ))
+
+    def forward(self, *args, **kwargs) -> dict:
+        outputs = self.model(*args, **kwargs)
+
+        return dict(
+            logits=outputs.logits.squeeze(),
+            hidden_states=outputs.hidden_states
+        )
+      
 
 class BARTClassif(nn.Module):
 
@@ -140,7 +178,7 @@ class BARTClassif(nn.Module):
     
     def __update_config(self, base_config, n_class):
         num_labels = n_class
-        label2id = { 'entailment': 0, 'neutral': 1, 'contradiction': 2}
+        label2id = {'entailment': 0, 'neutral': 1, 'contradiction': 2}
         id2label = {v: k for k,v in label2id.items()}
         
         base_config.update(dict(
@@ -154,5 +192,29 @@ class BARTClassif(nn.Module):
 
         return dict(
             logits=outputs.logits,
-            hidden_states=outputs.hidden_states
+            hidden_states=outputs.decoder_hidden_states
+        )
+
+class BARTBinaryClassif(nn.Module):
+
+    def __init__(self, name: str, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        config = AutoConfig.from_pretrained(name)
+        self.__update_config(base_config=config, n_class=1)
+
+        self.model = BartForSequenceClassification.from_pretrained(name, config=config)
+    
+    def __update_config(self, base_config, n_class):
+        num_labels = n_class
+
+        base_config.update(dict(
+            num_labels=num_labels
+        ))
+
+    def forward(self, *args, **kwargs) -> dict:
+        outputs = self.model(*args, **kwargs)
+
+        return dict(
+            logits=outputs.logits.squeeze(),
+            hidden_states=outputs.decoder_hidden_states
         )
