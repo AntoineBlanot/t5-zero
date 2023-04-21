@@ -8,31 +8,30 @@ import data.dataset as datasets
 import data.preprocess as preprocesses
 import data.prompt as prompts
 
-NAME = 'pred-bert'
+NAME = 'pred-roberta'
 
 config = dict(
     name=NAME,
     model_cfg=dict(
-        cls=zero.MultiClassZeroShot,
+        cls=zero.SingleClassZeroShot,
         module_cfg=dict(
-            cls=models.BERTClassif,
-            name='bert-base-uncased',
-            n_class=3
+            cls=models.RoBertaBinaryClassif,
+            name='roberta-base',
+            # n_class=3
         ),
-        save_path=Path('exp/bert-base-mnli/model-step-34000.pt'),
-        true_id=0,
-        false_id=2
+        save_path=Path('exp/roberta-base-mnli-bin/best-15000.pt'),
+        # true_id=0,
+        # false_id=2
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='bert-base-uncased',
+        pretrained_model_name_or_path='roberta-base',
         model_max_length=512
     ),
     data_cfg=dict(
         cls=datasets.ZeroDataset,
-        files=[str(x) for x in Path('/home/chikara/data/zero-shot-intent/demos/').glob('sentiment_collected_clean.json')],
-        prompt=prompts.BERTZeroSentimentPrompt(),
-        to_binary=False
+        files=[str(x) for x in Path('/home/chikara/data/zero-shot-intent/tung-yesno/').glob('*/data.json')],
+        prompt=prompts.BERTZeroYesNoPrompt()
     ),
     collator_cfg=dict(
         cls=preprocesses.ZeroCollator,
@@ -40,6 +39,6 @@ config = dict(
     ),
     engine_cfg=dict(
         eval_batch_size=8,
-        device='cpu'
+        device='cuda'
     )
 )

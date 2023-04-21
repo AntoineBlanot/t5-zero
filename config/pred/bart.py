@@ -8,29 +8,30 @@ import data.dataset as datasets
 import data.preprocess as preprocesses
 import data.prompt as prompts
 
-NAME = 'pred-pretrained-bart'
+NAME = 'pred-bart'
 
 config = dict(
     name=NAME,
     model_cfg=dict(
         cls=zero.MultiClassZeroShot,
         module_cfg=dict(
-            cls=models.PretrainedBARTClassif,
-            name='facebook/bart-large-mnli'
+            cls=models.BARTClassif,
+            name='facebook/bart-large',
+            n_class=3
         ),
-        true_id=2,
-        false_id=0
+        save_path=Path('exp/bart-large-mnli-fairseq/best-*.pt'),
+        true_id=0,
+        false_id=2
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='facebook/bart-large-mnli',
+        pretrained_model_name_or_path='facebook/bart-large',
         model_max_length=512
     ),
     data_cfg=dict(
         cls=datasets.ZeroDataset,
-        files=[str(x) for x in Path('/home/chikara/data/zero-shot-intent/demos/').glob('sentiment_collected_clean.json')],
-        prompt=prompts.BARTZeroSentimentPrompt(),
-        to_binary=False
+        files=[str(x) for x in Path('/home/chikara/data/zero-shot-intent/godel-generated/').glob('*/*.json')],
+        prompt=prompts.BARTZeroIntentPrompt()
     ),
     collator_cfg=dict(
         cls=preprocesses.ZeroCollator,
@@ -38,6 +39,6 @@ config = dict(
     ),
     engine_cfg=dict(
         eval_batch_size=8,
-        device='cpu'
+        device='cuda'
     )
 )
