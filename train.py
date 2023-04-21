@@ -4,6 +4,7 @@ import importlib
 from evaluate import load
 import torch
 from torch.utils.data import DataLoader
+
 from engine import Engine
 
 
@@ -55,9 +56,9 @@ def compute_metrics(outputs_dict: dict) -> dict:
 
     return {**dict(loss=loss), **acc, **rec, **prec, **f1}
 
-def compute_metrics_binary(outputs_dict: dict) -> dict:
+def compute_binary_metrics(outputs_dict: dict) -> dict:
     outputs = outputs_dict['outputs']
-    predictions = torch.where(outputs.sigmoid() > 0.5, 1, 0)
+    predictions = torch.where(outputs.sigmoid() > 0.5, 1.0, 0.0)
     labels = outputs_dict['labels']
 
     loss = outputs_dict['loss'].mean(-1).item()
@@ -68,11 +69,10 @@ def compute_metrics_binary(outputs_dict: dict) -> dict:
 
     return {**dict(loss=loss), **acc, **rec, **prec, **f1}
 
-
 # Engine
 engine =  Engine(
     model=model, train_loader=train_loader, eval_loader=eval_loader,
-    criterion=criterion, optimizer=optimizer, scheduler=scheduler, compute_metrics=compute_metrics_binary,
+    criterion=criterion, optimizer=optimizer, scheduler=scheduler, compute_metrics=compute_metrics,
     **engine_cfg
 )
 
