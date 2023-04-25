@@ -16,20 +16,20 @@ config = dict(
         cls=zero.SingleClassZeroShot,
         module_cfg=dict(
             cls=models.PretrainedBARTClassif,
-            name='facebook/bart-large-mnli'
+            name='/home/chikara/models/bart-3way/'
         ),
         true_id=2,
         # false_id=0
     ),
     tokenizer_cfg=dict(
         cls=AutoTokenizer.from_pretrained,
-        pretrained_model_name_or_path='facebook/bart-large-mnli',
+        pretrained_model_name_or_path='facebook/bart-large',
         model_max_length=512
     ),
     data_cfg=dict(
         cls=datasets.ZeroDataset,
-        files=[str(x) for x in Path('/home/chikara/data/zero-shot-intent/demos/').glob('sentiment_collected_clean.json')],
-        prompt=prompts.BasePromptClass()
+        files=[str(x) for x in Path('/home/chikara/data/zero-shot-intent/godel-generated/').glob('*/*.json')],
+        prompt=prompts.BARTZeroIntentPrompt()
     ),
     collator_cfg=dict(
         cls=preprocesses.ZeroCollator,
