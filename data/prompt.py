@@ -123,7 +123,7 @@ class BERTZeroYesNoPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['question: {} answer: {} {} The answer to the question is {}'.format(
+            ['question: {} answer: {} {} The answer to the question means {}'.format(
                 question,
                 target, tokenizer.sep_token,
                 convert_exemple(ref)
@@ -160,7 +160,7 @@ class BERTZeroSentimentPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['question: {} answer: {} {} The answer to the question expresses {}'.format(
+            ['question: {} answer: {} {} The answer to the question expresses a sentiment of {}'.format(
                 question,
                 target, tokenizer.sep_token,
                 convert_exemple(ref)
@@ -263,7 +263,7 @@ class BARTZeroYesNoPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['question: {} answer: {} {} The answer to the question is {}'.format(
+            ['question: {} answer: {} {} The answer to the question means {}'.format(
                 question,
                 target, tokenizer.sep_token+tokenizer.sep_token,
                 convert_exemple(ref)
@@ -300,7 +300,7 @@ class BARTZeroSentimentPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['question: {} answer: {} {} The answer to the question expresses {}'.format(
+            ['question: {} answer: {} {} The answer to the question expresses a sentiment of {}'.format(
                 question,
                 target, tokenizer.sep_token+tokenizer.sep_token,
                 convert_exemple(ref)
@@ -613,9 +613,9 @@ def convert_exemple(name: str) -> str:
         - converted intent
     """
     if name == 'yes':
-        new_name = 'an agreement'
+        new_name = 'yes'
     elif name == 'no':
-        new_name = 'a disagreement'
+        new_name = 'no'
     
     elif name == 'positive':
         new_name = 'positivity'
