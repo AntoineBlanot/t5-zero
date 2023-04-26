@@ -85,7 +85,7 @@ class MultiClassZeroShot(nn.Module):
         grouped_outputs = torch.split(outputs, group_count)
 
         probs = [x.softmax(1)[:, 0] for x in grouped_outputs]
-        predictions = simple_rules(probs, threshold=0.8)
+        predictions = simple_rules(probs, threshold=0.6)
 
         labels = outputs_dict['labels']
         labels = torch.split(labels, group_count)
