@@ -548,7 +548,7 @@ class UniEvalZeroYesNoPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['question: Is the answer to the interrogation {}? {} interrogation: {} {} answer: {}'.format(
+            ['question: Does the answer to the interrogation mean {}? {} interrogation: {} {} answer: {}'.format(
                 convert_exemple(ref), tokenizer.eos_token,
                 question, tokenizer.eos_token,
                 target
@@ -585,7 +585,7 @@ class UniEvalZeroSentimentPrompt(BasePromptClass):
         label_list = examples['label']
 
         prompt_list, label, ref_list, group = zip(*[
-            ['question: Does the answer to the interrogation expresses {}? {} interrogation: {} {} answer: {}'.format(
+            ['question: Does the answer to the interrogation express a sentiment of {}? {} interrogation: {} {} answer: {}'.format(
                 convert_exemple(ref), tokenizer.eos_token,
                 question, tokenizer.eos_token,
                 target
