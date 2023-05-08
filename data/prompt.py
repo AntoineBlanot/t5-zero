@@ -336,14 +336,13 @@ class T5NLIPrompt(BasePromptClass):
         hypothesis_list = examples['hypothesis']
 
         prompt_list = [
-            'hypothesis: The premise entaills the claim {} premise: {} {} claim: {}'.format(
-                tokenizer.eos_token,
-                premise, tokenizer.eos_token,
-                hypothesis
+            'premise: {} claim: {}'.format(
+                premise, hypothesis
             )
             for premise, hypothesis in zip(premise_list, hypothesis_list) 
         ]
         examples['input_text'] = prompt_list
+        examples['target_text'] = ['The premise entails the claim'] * len(prompt_list)
         
         return examples
 
@@ -367,19 +366,30 @@ class T5ZeroIntentPrompt(BasePromptClass):
         possible_intents_list = examples['possible_intents']
         label_list = examples['label']
 
-        prompt_list, label, ref_list, group = zip(*[
-            ['hypothesis: The answer to the question is similar to the claim {} question: {} {} answer: {} {} claim: {}'.format(
-                tokenizer.eos_token,
-                question, tokenizer.eos_token,
-                target, tokenizer.eos_token,
-                convert_exemple(ref)
-            ), label, ref_list, i]
+        # prompt_list, target_list, label, ref_list, group = zip(*[
+        #     ['question: {} answer: {}'.format(
+        #         question, target
+        #     ),
+        #     'The answer to the question is similar to: {}'.format(
+        #     convert_exemple(ref)
+        #     ), label, ref_list, i]
+        #     for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
+        #     for ref in ref_list
+        # ])
+
+        prompt_list, target_list, label, ref_list, group = zip(*[
+            ['hypothesis: The answer to the question is similar to: {} question: {} answer: {}'.format(
+                convert_exemple(ref),
+                question, target
+            ),
+            'The hypothesis is true', label, ref_list, i]
             for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
             for ref in ref_list
         ])
-
+        
         return dict(
             input_text=list(prompt_list),
+            target_text=list(target_list),
             label=list(label),
             ref_list=list(ref_list),
             group=list(group)
@@ -405,18 +415,31 @@ class T5ZeroYesNoPrompt(BasePromptClass):
         possible_intents_list = examples['possible_intents']
         label_list = examples['label']
 
-        prompt_list, label, ref_list, group = zip(*[
-            ['hypothesis: The answer to the question is {} {} question: {} {} answer: {}'.format(
-                convert_exemple(ref), tokenizer.eos_token,
-                question, tokenizer.eos_token,
-                target
-            ), label, ref_list, i]
+        # prompt_list, target_list, label, ref_list, group = zip(*[
+        #     ['question: {} answer: {}'.format(
+        #         question, target
+        #     ),
+        #     'The answer to the question means {}'.format(
+        #         convert_exemple(ref)
+        #     ),
+        #     label, ref_list, i]
+        #     for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
+        #     for ref in ref_list
+        # ])
+
+        prompt_list, target_list, label, ref_list, group = zip(*[
+            ['hypothesis: The answer to the question means {} question: {} answer: {}'.format(
+                convert_exemple(ref),
+                question, target
+            ),
+            'The hypothesis is true', label, ref_list, i]
             for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
             for ref in ref_list
         ])
 
         return dict(
             input_text=list(prompt_list),
+            target_text=list(target_list),
             label=list(label),
             ref_list=list(ref_list),
             group=list(group)
@@ -442,18 +465,31 @@ class T5ZeroSentimentPrompt(BasePromptClass):
         possible_intents_list = examples['possible_intents']
         label_list = examples['label']
 
-        prompt_list, label, ref_list, group = zip(*[
-            ['hypothesis: The answer to the question expresses {} {} question: {} {} answer: {}'.format(
-                convert_exemple(ref), tokenizer.eos_token,
-                question, tokenizer.eos_token,
-                target
-            ), label, ref_list, i]
+        # prompt_list, target_list, label, ref_list, group = zip(*[
+        #     ['question: {} answer: {}'.format(
+        #         question, target
+        #     ),
+        #     'The answer to the question expresses a sentiment of {}'.format(
+        #         convert_exemple(ref)
+        #     ), 
+        #     label, ref_list, i]
+        #     for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
+        #     for ref in ref_list
+        # ])
+
+        prompt_list, target_list, label, ref_list, group = zip(*[
+            ['hypothesis: The answer to the question expresses a sentiment of {} question: {} answer: {}'.format(
+                convert_exemple(ref),
+                question, target
+            ),
+            'The hypothesis is true', label, ref_list, i]
             for i, question, target, ref_list, label in zip(indices, bot_question_list, user_answer_list, possible_intents_list, label_list)
             for ref in ref_list
         ])
 
         return dict(
             input_text=list(prompt_list),
+            target_text=list(target_list),
             label=list(label),
             ref_list=list(ref_list),
             group=list(group)
