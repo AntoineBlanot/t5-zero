@@ -1,7 +1,9 @@
+from typing import Dict
 import torch
 from torch import Tensor, nn
 from transformers import (
-    AutoConfig, AutoModelForSeq2SeqLM, 
+    AutoConfig, AutoModelForSeq2SeqLM,
+    T5Model,
     BertForSequenceClassification, RobertaForSequenceClassification, BartForSequenceClassification
 )
 
@@ -217,4 +219,38 @@ class BARTBinaryClassif(nn.Module):
         return dict(
             logits=outputs.logits.squeeze(),
             hidden_states=outputs.decoder_hidden_states
+        )
+    
+class T5ModelForClassification(nn.Module):
+
+    def __init__(self, config_dict, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.criterion = nn.CrossEntropyLoss()
+        self.t5 = T5Model.from_pretrained(**config_dict)
+        self.head = nn.Linear(self.t5.config.d_model, 3)
+
+        print('Model parameters: {}M ({}M trainable)'.format(
+            int(self.__count_parameters()/1e6), int(self.__count_parameters(True)/1e6)
+        ))
+
+    def __count_parameters(self, trainable: bool = False):
+        if trainable:
+            return sum(p.numel() for p in self.parameters() if p.requires_grad)
+        else:
+            return sum(p.numel() for p in self.parameters())
+    
+    def forward(self,
+        input_ids: Tensor, attention_mask: Tensor,
+        decoder_input_ids: Tensor, decoder_attention_mask: Tensor,
+        labels: Tensor = None
+    ) -> Dict[str, Tensor]:
+        
+        last_hidden_state = self.t5(
+            input_ids=input_ids, attention_mask=attention_mask,
+            decoder_input_ids=decoder_input_ids, decoder_attention_mask=decoder_attention_mask
+        ).last_hidden_state
+        outputs = self.head(last_hidden_state[:, 0, :])
+
+        return dict(
+            logits=outputs
         )
